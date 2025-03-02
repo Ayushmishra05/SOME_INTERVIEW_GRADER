@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="text-center mb-5">
+    <h1 class="display-4 fw-bold animate__animated animate__fadeInDown" style="color: var(--primary-blue);">
+      Analysis Completed!
+    </h1>
+    <p class="lead animate__animated animate__fadeInUp">
+      Thank you, <strong style="color: var(--accent-red);">{{ user_name }}</strong>! Your video has been analyzed.
+    </p>
+  </div>
+
+  <div class="row">
+    <div class="col-md-6 mb-4 animate__animated animate__fadeInLeft">
+      <div class="card shadow border-0">
+        <div class="card-body">
+          <h5 class="card-title" style="color: var(--primary-blue);">Your Uploaded Video</h5>
+          <video width="100%" controls class="rounded" style="border: 2px solid var(--primary-blue);">
+            <source src="{{ url_for('uploaded_file', filename=video_filename) }}" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-6 mb-4 animate__animated animate__fadeInRight d-flex align-items-center justify-content-center">
+      <div class="text-center">
+        <p class="fs-4" style="color: var(--primary-blue);">Ready to review your comprehensive report?</p>
+        <a href="{{ pdf_url }}" class="btn btn-primary btn-lg shadow">
+          <i class="bi bi-download me-2"></i> Download PDF Report
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
