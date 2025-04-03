@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container py-5">
   <div class="card p-4 shadow mb-5">
-    <h2 class="mb-4 text-center" style="color: var(--primary-blue);">Upload Your Video Resume</h2>
+    <b><h2 class="mb-4 text-center" style="color: purple;">Upload Your Video Resume</h2></b>
     <form method="POST" enctype="multipart/form-data">
       <div class="mb-3">
         <label for="user_name" class="form-label">Enter your name:</label>
@@ -11,30 +11,47 @@
                placeholder="Your name" required style="border-color: var(--primary-blue);">
       </div>
 
+      <!-- Toggle for Source Selection -->
       <div class="mb-4 d-flex align-items-center justify-content-center">
         <div class="form-check form-switch">
           <input class="form-check-input" type="checkbox" role="switch" 
                  id="sourceSwitch" style="width: 3em; height: 1.5em;">
           <label class="form-check-label ms-3" for="sourceSwitch">
-            <span class="toggle-label" id="toggleLabel" style="color: var(--primary-blue);">YouTube URL</span>
+            <span class="toggle-label" id="toggleLabel" style="color: var(--primary-blue);">YouTube / Drive URL</span>
           </label>
         </div>
       </div>
 
+      <!-- YouTube / Google Drive URL Input -->
       <div class="mb-3 url-source" id="youtubeSection">
-        <label for="youtube_url" class="form-label">YouTube URL:</label>
-        <input type="url" class="form-control" id="youtube_url" name="youtube_url" 
-               placeholder="https://youtube.com/your-video" 
-               pattern="^(https?\:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+"
-               style="border-color: var(--primary-blue);">
+        <label for="youtube_url" class="form-label">YouTube or Google Drive URL:</label>
+        <input type="text" class="form-control" id="youtube_url" name="youtube_url" placeholder="Enter YouTube or Google Drive URL">
+        <div class="form-text" style="color: var(--accent-red);">
+          Supports YouTube and Google Drive video links.
+        </div>
       </div>
 
+      <!-- File Upload Input -->
       <div class="mb-3 file-source d-none" id="fileSection">
         <label for="video_file" class="form-label">Upload Video File:</label>
         <input type="file" class="form-control" id="video_file" name="video_file" 
                accept=".mp4, .mov, .avi, .mkv" 
                style="border-color: var(--primary-blue);">
-        <div class="form-text" style="color: var(--accent-red);">Supported formats: MP4, MOV, AVI, MKV</div>
+        <div class="form-text" style="color: var(--accent-red);">
+          Supported formats: MP4, MOV, AVI, MKV.
+        </div>
+      </div>
+
+      <!-- Toggle for Presentation Mode -->
+      <div class="mb-4 d-flex align-items-center justify-content-center">
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" role="switch" 
+                 id="presentationSwitch" name="presentation_mode"
+                 style="width: 3em; height: 1.5em;">
+          <label class="form-check-label ms-3" for="presentationSwitch">
+            <span class="toggle-label" id="presentationLabel" style="color: var(--primary-blue);">Standard Mode</span>
+          </label>
+        </div>
       </div>
 
       <button type="submit" class="btn btn-primary w-100">Start Analysis</button>
@@ -65,18 +82,45 @@
     const toggleLabel = document.getElementById('toggleLabel');
     const youtubeInput = document.getElementById('youtube_url');
     const fileInput = document.getElementById('video_file');
+    const presentationSwitch = document.getElementById('presentationSwitch');
+    const presentationLabel = document.getElementById('presentationLabel');
 
+    // Function to toggle between YouTube/Drive URL and File Upload
     function toggleSource() {
       const isFileSource = sourceSwitch.checked;
       youtubeSection.classList.toggle('d-none', isFileSource);
       fileSection.classList.toggle('d-none', !isFileSource);
-      toggleLabel.textContent = isFileSource ? 'File Upload' : 'YouTube URL';
+      toggleLabel.textContent = isFileSource ? 'File Upload' : 'YouTube / Drive URL';
       youtubeInput.required = !isFileSource;
       fileInput.required = isFileSource;
     }
 
+    // Function to toggle Presentation Mode text
+    function togglePresentation() {
+      const isPresentationMode = presentationSwitch.checked;
+      presentationLabel.textContent = isPresentationMode ? 'Presentation Mode' : 'Standard Mode';
+    }
+
+    // Video URL validation for YouTube and Google Drive
+    function isValidVideoURL(url) {
+      const drivePattern = /^(https?:\/\/)?(drive\.google\.com\/file\/d\/[a-zA-Z0-9_-]+\/view).*$/;
+      return youtubePattern.test(url) || drivePattern.test(url);
+    }
+
+    // Validate YouTube or Google Drive URL on input change
+    youtubeInput.addEventListener("input", function () {
+      if (!isValidVideoURL(this.value)) {
+        this.setCustomValidity("Please enter a valid YouTube or Google Drive video link.");
+      } else {
+        this.setCustomValidity("");
+      }
+    });
+
+    // Event Listeners
     sourceSwitch.addEventListener('change', toggleSource);
+    presentationSwitch.addEventListener('change', togglePresentation);
     toggleSource();
+    togglePresentation();
   });
 </script>
-{% endblock %}i
+{% endblock %}
