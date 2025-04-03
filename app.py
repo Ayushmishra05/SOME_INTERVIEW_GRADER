@@ -6,11 +6,8 @@ from LLM_Module.Overall_Analyser import VideoResumeEvaluator
 from video_module.VideoEvaluation import VideoAnalyzer 
 from LLM_Module.Qualitative_Analyser import VideoResumeEvaluator2
 from report_generation_module.PDF_Generator import create_combined_pdf
-from video_module.yt_video import download_youtube_video
-from video_module.compressor import compress_video_target
-
-
-
+from video_module.drive_video_download import download_drive_url
+from LLM_Module.score_analyser import score_analyser
 import os
 os.environ['FLASK_RUN_EXTRA_FILES'] = ''
 
@@ -26,6 +23,14 @@ def index():
         user_name = request.form.get("user_name")
         youtube_url = request.form.get("youtube_url")
         video_file = request.files.get("video_file")
+        presentation_mode = request.form.get("presentation_mode")
+        print("<------------------------------------------------------->")
+        print("<------------------------------------------------------->")
+        print("Presentation Mode : ", presentation_mode)
+        print("<------------------------------------------------------->")
+        print("<------------------------------------------------------->")
+        with open("json/presentation.json", "w") as file:
+            json.dump({"presentation_mode": presentation_mode}, file, indent=4)
 
         
         if not user_name:
@@ -35,46 +40,45 @@ def index():
         try:
             uploads_dir = os.path.join(app.root_path, "static", "uploads")
             if youtube_url:
-                download_youtube_video(youtube_url)
+                download_drive_url(youtube_url)
                 file_path = os.path.join(uploads_dir, "video.mp4")
                 video_filename = "video.mp4"
             else:
                 if not video_file:
                     flash("Video file is missing!", "warning")
                     return redirect(request.url)
-                file_path = os.path.join(uploads_dir, video_file.filename)
+                file_path = os.path.join(uploads_dir, "video.mp4")
                 video_file.save(file_path)
-                video_filename = video_file.filename
+                video_filename = "video.mp4"
 
             with open(file_path, 'rb') as f:
                 analyzer = VideoAnalyzer(f)
                 analysis_output = analyzer.analyze_video()
-            print("------------------------------------------DEbugger 1 ----------------")
+
             output_json_path = os.path.join(app.root_path, "json", "output.json")
             with open(output_json_path, 'w', encoding='utf-8') as json_file:
                 json.dump(analysis_output, json_file, ensure_ascii=False, indent=4)
 
-            print("------------------------------------------DEbugger 2 ----------------")
             with open(file_path, 'rb') as f:
-                audio_path = os.path.join(app.root_path, "audio/audiofile.wav")
+                audio_path = os.path.join(app.root_path, "audiofile.wav")
                 transcription_json_path = os.path.join(app.root_path, "json", "transcription_output.json")
                 transcriber = VideoTranscriber(f, audio_path, transcription_json_path)
                 transcription_output = transcriber.transcribe()
-            print("------------------------------------------DEbugger 3 ----------------")
 
             evaluator = VideoResumeEvaluator()
             quality_evaluator = VideoResumeEvaluator2()
-            eval_results = evaluator.evaluate_transcription(transcription_output)
+            eval_results = evaluator.evaluate_transcription(transcription_output) 
+            output = score_analyser(eval_results)
+            with open(os.path.join(app.root_path, "json", "scores.json") , 'w') as fp:
+                json.dump(output, fp)
             quality_evaluator.evaluate_transcription(transcription_output)
 
-            print("------------------------------------------DEbugger 4 ----------------")
             with open(output_json_path, 'r') as f:
                 data = json.load(f)
             data.update({
                 'User Name': user_name,
                 'LLM': eval_results
             })
-            print("------------------------------------------DEbugger 5 ----------------")
             with open(output_json_path, 'w') as f:
                 json.dump(data, f, indent=4)
 
@@ -82,7 +86,6 @@ def index():
             pdf_path = os.path.join(reports_dir, "combined_report.pdf")
             logo_path = os.path.join(app.root_path, "logos", "logo.png")
             create_combined_pdf(logo_path, output_json_path)
-            print("------------------------------------------DEbugger 6 ----------------")
 
             flash("Video analysis and PDF report generation completed successfully!", "success")
             return render_template("result.html", 
@@ -90,7 +93,7 @@ def index():
                             video_filename=video_filename, 
                             pdf_url=url_for("download_pdf"))
         except Exception as e:
-            flash(f"An error occurred in PDF Generation Module: {str(e)}", "danger")
+            flash(f"An error occurred: {str(e)}", "danger")
             return redirect(request.url)
     return render_template("index.html")
 
@@ -106,4 +109,4 @@ def download_pdf():
     return send_file(pdf_path, as_attachment=True, download_name="evaluation_report.pdf")
 
 if __name__ == "__main__":
-    app.run(debug=False)
+    app.run(port = '5032',host = '0.0.0.0', debug=False)

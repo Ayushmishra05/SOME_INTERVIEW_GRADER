@@ -19,22 +19,48 @@ styles = getSampleStyleSheet()
 styles['BodyText'].fontName = 'Arial'
 
 def create_combined_pdf(logo_path, json_path):
+    with open("json/presentation.json", "r") as file:
+        data = json.load(file)
+
+    presentation_mode = data.get("presentation_mode", False)
     with open(json_path, 'r') as fp:
         tabular_data = json.load(fp)
 
-    llm_questions = [
-        "Questions", 
-        "Did the Speaker Speak with Confidence ?", 
-        "Was the content interesting and as per the guidelines provided?",
-        "Who are you and what are your skills, expertise, and personality traits?",
-        "Why are you the best person to fit this role?",
-        "How are you different from others?",
-        "What value do you bring to the role?",
-        "Did the speech have a structure of Opening, Body, and Conclusion?",
-        "Did the speaker vary their tone, speed, and volume while delivering the speech/presentation?", 
-        "How was the quality of research for the topic? Did the speech demonstrate good depth? Did they cite sources?",
-        "How convinced were you with the overall speech on the topic? Was it persuasive? Will you consider them for the job/opportunity?"
-    ]
+    with open(r'json/scores.json', 'r') as fp:
+        quality_data = json.load(fp)
+        midval = list(quality_data.values())
+        
+    if presentation_mode == 'on':
+        llm_questions = [
+            "Questions", 
+            "Did the Speaker Speak with Confidence ?", 
+            "Did the speaker vary their tone, speed, volume while delivering the speech/presentation? ",
+            "Did the speech have a structure of Opening, Body and Conclusion? ",
+            "Was the overall “Objective” of the speech delivered clearly?",
+            "Was the content of the presentation/speech brief and to the point, or did it include unnecessary details that may have distracted or confused the audience?",
+            "Was the content of the presentation/speech engaging, and did it capture the audience’s attention?", 
+            "Was the content of the presentation/speech relevant to the objective of the presentation?", 
+            "Was the content of the presentation/speech clear and easy to understand?", 
+            "Did the speaker add relevant examples, anecdotes and data to back their content?",
+            "Did the speaker demonstrate credibility? Will you trust the speaker?", 
+            "Did the speaker clearly explain how the speech or topic would benefit you and what you could gain from it?", 
+            "Was the speaker able to evoke an emotional connection with the audience?", 
+            "Overall, were you convinced/ persuaded with the speaker’s view on the topic?"
+        ]
+    else: 
+        llm_questions = [
+            "Questions", 
+            "Did the Speaker Speak with Confidence ?", 
+            "Was the content interesting and as per the guidelines provided?",
+            "Who are you and what are your skills, expertise, and personality traits?",
+            "Why are you the best person to fit this role?",
+            "How are you different from others?",
+            "What value do you bring to the role?",
+            "Did the speech have a structure of Opening, Body, and Conclusion?",
+            "Did the speaker vary their tone, speed, and volume while delivering the speech/presentation?", 
+            "How was the quality of research for the topic? Did the speech demonstrate good depth? Did they cite sources?",
+            "How convinced were you with the overall speech on the topic? Was it persuasive? Will you consider them for the job/opportunity?"
+        ]
 
     def clean_answer(answer):
         return re.sub(r'^\d+\.\s*', '', answer).strip()
@@ -54,9 +80,9 @@ def create_combined_pdf(logo_path, json_path):
         canvas.saveState()
         logo = Image(logo_path, width=2*inch, height=1*inch)
         logo.drawOn(canvas, (letter[0]-2*inch)/2, letter[1]-1.2*inch)
-        website_text = "https://some.education"
+        website_text = "https://some.education.in"
         canvas.setFont("Arial", 9)
-        canvas.linkURL("https://some.education",
+        canvas.linkURL("https://some.education.in",
                        (0.5*inch, 0.3*inch, 2.5*inch, 0.5*inch),
                        relative=1)
         canvas.drawString(0.5*inch, 0.3*inch, website_text)
@@ -104,10 +130,9 @@ def create_combined_pdf(logo_path, json_path):
         with open(r'json/quality_analysis.json', 'r') as fp:
             quality_data = json.load(fp)
         add_quality_section("Qualitative Analysis - Positive", quality_data["Qualitative Analysis"])
-        add_quality_section("Qualitative Analysis - Areas of Imrpovement", quality_data["Quantitative Analysis"])
+        add_quality_section("Qualitative Analysis - Areas of Improvement", quality_data["Quantitative Analysis"])
     except:
         pass
-
 
     flowables.append(Spacer(1, 18))
     flowables.append(PageBreak())
@@ -119,15 +144,19 @@ def create_combined_pdf(logo_path, json_path):
     normal_style = ParagraphStyle('NormalStyle', parent=styles['BodyText'], fontSize=10, leading=12, spaceAfter=6)
     bold_style = ParagraphStyle('BoldStyle', parent=normal_style, fontName='Helvetica-Bold')
 
+    # Modified table data with new middle column
     table_data = [
         [
             Paragraph("<b>No.</b>", bold_style),
             Paragraph("<b>Items to look out for</b>", bold_style),
+            Paragraph("<b>Middle Column</b>", bold_style),  # New column
             Paragraph("<b>5 point scale / Answer</b>", bold_style)
         ]
     ]
 
     for i, question in enumerate(llm_questions[1:], 1):
+        print("I VALUE --> " , i)
+        print("MID VAL --> " , midval)
         if i == 1:
             sub_items = [
                 ("Posture", "posture"),
@@ -151,43 +180,31 @@ def create_combined_pdf(logo_path, json_path):
                 elif metric_value == 5:
                     scores.append("Excellent")
                 else:
-                    scores.append("N/A")
+                    scores.append("Poor")
             scores_text = "<br/>" + "<br/>".join([f"<b>{score}</b>" for score in scores])
+            print(" I ---- > ",  i -1  , midval[i-1])
             table_data.append([
                 Paragraph(f"{i}.", normal_style),
                 Paragraph(items_text, normal_style),
+                Paragraph(midval[i - 1], normal_style),  
                 Paragraph(scores_text, normal_style)
             ])
-        # elif i == 10:
-        #     # Override Q10 to use only computed audio metrics.
-        #     avg_vol = tabular_data.get("average_volume", 0)
-        #     vol_std = tabular_data.get("volume_std", 0)
-        #     speed = tabular_data.get("speaking_speed", tabular_data.get("words_per_minute", 0))
-        #     speed_std = tabular_data.get("speed_std", tabular_data.get("pace_std", 0))
-        #     predicted_tone = tabular_data.get("predicted_tone", "unknown")
-        #     volume_percentage = ((avg_vol + 60) / 60) * 100 if avg_vol != float('-inf') else 0
-        #     answer = (f"Average Volume: {avg_vol:.2f} dBFS, Volume Std Dev: {vol_std:.2f} dB, "
-        #               f"Speaking Speed: {speed:.2f} wpm, Speed Std Dev: {speed_std:.2f} wpm, "
-        #               f"Predicted Tone: {predicted_tone}")
-        #     table_data.append([
-        #         Paragraph(f"{i}.", normal_style),
-        #         Paragraph(question, normal_style),
-        #         Paragraph(answer, normal_style)
-        #     ])
         else:
             answer_index = i if i < len(llm_answers) else None
             if answer_index is not None:
                 answer = clean_answer(llm_answers[answer_index])
             else:
                 answer = "N/A"
+            print(" I ---- > ",  i -1  , midval[i-1])
             table_data.append([
                 Paragraph(f"{i}.", normal_style),
                 Paragraph(question, normal_style),
+                Paragraph(midval[i -1], normal_style),  
                 Paragraph(answer, normal_style)
             ])
 
-    from reportlab.platypus import Table
-    table = Table(table_data, colWidths=[40, 300, 200])
+    # Create table with adjusted column widths
+    table = Table(table_data, colWidths=[40, 250, 80, 200])
     table.setStyle(TableStyle([
         ('ALIGN', (0,0), (-1,-1), 'LEFT'),
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
@@ -209,8 +226,5 @@ def create_combined_pdf(logo_path, json_path):
     print("PDF generated successfully with dynamic table!")
     os.remove(save_path)
 
-
-
-
-# if __name__ == "__main__":
-#     create_combined_pdf(r"logos\logo.png" , r"json\output.json")
+if __name__ == "__main__":
+    create_combined_pdf(r"logos\logo.png" , r"json\output.json")

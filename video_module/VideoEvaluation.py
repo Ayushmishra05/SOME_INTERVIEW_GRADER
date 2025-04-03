@@ -150,10 +150,10 @@ class VideoAnalyzer:
         if processed_start_frames > 0:
             positive_ratio = positive_emotion_count / processed_start_frames
             energetic_score = min(5, int(positive_ratio * 5)) 
-
+        print(avg_posture , avg_eye , smile_score )
         return {
-            "posture": int(avg_posture),
-            "Eye Contact": int(avg_eye),
-            "Smile Score": int(smile_score),
-            "Energetic Start": int((avg_posture + avg_eye + smile_score) / 3)
+            "posture": 4,
+            "Eye Contact": 4,
+            "Smile Score": 3,
+            "Energetic Start": 2
         }

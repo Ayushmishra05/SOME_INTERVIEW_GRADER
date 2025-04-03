@@ -16,7 +16,7 @@ class VideoTranscriber:
         self.output_audio_path = output_audio_path
         self.output_json_path = output_json_path
         self.client = Groq()
-        self.model = whisper.load_model("small")
+        # self.model = whisper.load_model("small")
         self.target_size_kb = 50000 
         self.client = Groq()
         self.compressed_audio_path = "audio/audio.wav"
@@ -34,7 +34,7 @@ class VideoTranscriber:
         video_file = self.video_file
         if isinstance(video_file, str):  # If file path is given
             temp_video_file_path = video_file
-        else:  # If file object is given (e.g., in Streamlit or Flask)
+        else:  
             with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as temp_video_file:
                 temp_video_file.write(video_file.read())
                 temp_video_file_path = temp_video_file.name
@@ -42,7 +42,7 @@ class VideoTranscriber:
 
         video_clip = mp.VideoFileClip(temp_video_file_path)
         audio_path = self.output_audio_path
-        video_clip.audio.write_audiofile(audio_path)
+        video_clip.audio.write_audiofile(audio_path )
         
        
         duration = video_clip.audio.duration  # Get audio duration in seconds
@@ -55,7 +55,7 @@ class VideoTranscriber:
         
         ffmpeg.input(audio_path).output(
             self.compressed_audio_path, 
-            audio_bitrate=f"{int(target_bitrate)}k", 
+            audio_bitrate=f"{int(target_bitrate)}", 
             format="mp3", 
             acodec="libmp3lame"
         ).run(overwrite_output=True)
@@ -74,6 +74,7 @@ class VideoTranscriber:
             response_format="verbose_json",
             language='en'
             )
+        print("TRanscibe 1 inside")
             
       
         transcription_output = []
@@ -91,6 +92,7 @@ class VideoTranscriber:
                 'end': end,
                 'text': text
             })
+        print("Transcriber 2 inside")
 
         with open(self.output_json_path, 'w', encoding='utf-8') as json_file:
             json.dump(transcription_output, json_file, ensure_ascii=False, indent=4)
