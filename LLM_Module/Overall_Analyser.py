@@ -27,19 +27,19 @@ class VideoResumeEvaluator:
     1. Did the Speaker Speak with Confidence? (One line answer)
     2. Did the speaker vary their tone, speed, and volume while delivering the speech/presentation? Here are the details provided about the tone, speed, pace, and volume, {audio_metrics}, I want you 
     to give the answer in a sentence format, (For ex : The Tone and Volume was appropriate. you could have maintained a steady Speed in Delivery. A few Words were pronounced very fast), I want you to give the answer in a proper sentence like the example, and doesn't provide the numerical metrics to user, it should be in sentence, but dont tell like, dont tell your that your tone was neutrl/sad/happy, say that your maintained a good tone, this is an example
-    3. Did the speech have a structure of Opening, Body and Conclusion? (2-3 lines descriptive answer)
-    4. Was the overall “Objective” of the speech delivered clearly? (2-3 lines descriptive answer)
+    3. Did the speech have a structure of Opening, Body and Conclusion? (2-3 lines explanation pointing out the mistake or Appreciation)
+    4. Was the overall “Objective” of the speech delivered clearly? (2-3 lines explanation about how good or bad it was)
     5. Was the content of the presentation/speech brief and to the point, or did it include unnecessary details that may have distracted or confused the audience? (2-3 lines descriptive answer)
-    6. Was the content of the presentation/speech engaging, and did it capture the audience’s attention? (2-3 lines descriptive answer)
-    7. Was the content of the presentation/speech relevant to the objective of the presentation? (2-3 lines descriptive answer)
-    8. Was the content of the presentation/speech clear and easy to understand? (2-3 lines descriptive answer)
+    6. Was the content of the presentation/speech engaging, and did it capture the audience’s attention?  (2-3 lines explanation about how good or bad it was)
+    7. Was the content of the presentation/speech relevant to the objective of the presentation?  (3-4 lines Descriptive Answer)
+    8. Was the content of the presentation/speech clear and easy to understand?  (2-3 lines explanation about hwo good or bad it was)
     9. Did the speaker add relevant examples, anecdotes and data to back their content? (2-3 lines descriptive answer)
     10. Did the speaker demonstrate credibility? Will you trust the speaker?  (2-3 lines descriptive answer)
     11.Did the speaker clearly explain how the speech or topic would benefit you and what you could gain from it? (2-3 lines descriptive answer)
     12. Was the speaker able to evoke an emotional connection with the audience? (2-3 lines descriptive answer)
     13. Overall, were you convinced/ persuaded with the speaker’s view on the topic? (2-3 lines descriptive answer)
     Only provide the answers to these questions—do not include any extra commentary. 
-    Start your response with "These are the Answers:" and then list each answer on a new line. Call the user as you.
+    Start your response with "These are the Answers:" and then list each answer on a new line. Refer the user as You, it should be like you are directly talking to him
                 """
                 )
             ])
@@ -54,17 +54,17 @@ class VideoResumeEvaluator:
     Questions:
     1. Did the Speaker Speak with Confidence? (One line answer)
     2. Was the content interesting and as per the guidelines provided? (One line answer)
-    3. Who are you and what are your skills, expertise, and personality traits? (Provide only a rating: Needs Improvement, Poor, Satisfactory, or Excellent)
-    4. Why are you the best person to fit this role? (Provide only a rating: Excellent, Good, or Poor)
-    5. How are you different from others? (Provide only a rating: Excellent, Good, or Poor)
-    6. What value do you bring to the role? (Provide only a rating: Excellent, Good, or Poor)
+    3. Who are you and what are your skills, expertise, and personality traits? (Give a one line answer, including the point, where he/she performed well/bad)
+    4. Why are you the best person to fit this role? (Give a one line answer, including the point, where he/she performed well/bad)
+    5. How are you different from others? (Give a one line answer, including the point, where he/she performed well/bad)
+    6. What value do you bring to the role? (Give a one line answer, including the point, where he/she performed well/bad)
     7. Did the speech have a structure of Opening, Body, and Conclusion? (One line descriptive answer)
     8. Did the speaker vary their tone, speed, and volume while delivering the speech/presentation? Here are the details provided about the tone, speed, pace, and volume, {audio_metrics}, I want you 
     to give the answer in a sentence format, (For ex : The Tone and Volume was appropriate. you could have maintained a steady Speed in Delivery. A few Words were pronounced very fast), I want you to give the answer in a proper sentence like the example, and doesn't provide the numerical metrics to user, it should be in sentence, but dont tell like, dont tell your that your tone was neutrl/sad/happy, say that your maintained a good tone, this is an example
     9. How was the quality of research for the topic? Did the speech demonstrate good depth and proper citations? (2-3 lines descriptive answer)
     10. How convinced were you with the overall speech on the topic? Was it persuasive? Will you consider them for the job/opportunity? (Descriptive answer)
     Only provide the answers to these questions—do not include any extra commentary. 
-    Start your response with "These are the Answers:" and then list each answer on a new line.
+    Start your response with "These are the Answers:" and then list each answer on a new line. Refer the user as You, it should be like you are directly talking to him
                 """
                 )
             ])

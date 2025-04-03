@@ -33,7 +33,7 @@ taking on leadership roles at all.
 , Overall a very confident presentation.) You can directly Point out the user, in whichever point you want. 
 and in case of Quantitative Analysis, Give atleast 5 points, make it clear and concise, In Quantitative Analysis, talks about the Areas of Improvement, Talk About where user can improve, and give your output finally in dictionary format something like this. Also When Talking About Areas of Improvement, if there is a Rude Sentence, or a sentence that should not be said, point it in the Quantitative Analysis One, 
 In a json file Key => Qualitative Analysis , Value = (your answer in points) Similarly, key = Quantitative Analysis , Value = (your answer in points) , , but ensure all the values which you are giving inside list should be in double quotes, Remember this very carefully, that should be in carefully, this is a strict requirement No extras, i only the dictionary Output, Remember this very Carefully, and also You are not allowed to talk about the feature, which you don't know, like you can't talk 
-about his tone, posture, because you don't know about this, but you have the transcription, so try to give the points only on those basis . 
+about his tone, posture, because you don't know about this, but you have the transcription, so try to give the points only on those basis ,  Refer the user as You, it should be like you are directly talking to him. 
 """
             )
         ])
