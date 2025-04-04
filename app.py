@@ -66,8 +66,10 @@ def index():
                 transcription_output = transcriber.transcribe()
 
             evaluator = VideoResumeEvaluator()
-            quality_evaluator = VideoResumeEvaluator2()
+            quality_evaluator = VideoResumeEvaluator2() 
+        
             eval_results = evaluator.evaluate_transcription(transcription_output) 
+            print("AI Results --> " , eval_results)
             output = score_analyser(eval_results)
             with open(os.path.join(app.root_path, "json", "scores.json") , 'w') as fp:
                 json.dump(output, fp)
@@ -109,4 +111,4 @@ def download_pdf():
     return send_file(pdf_path, as_attachment=True, download_name="evaluation_report.pdf")
 
 if __name__ == "__main__":
-    app.run(port = '5032',host = '0.0.0.0', debug=False)
+    app.run(port = '5032',host = '0.0.0.0')

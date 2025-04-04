@@ -27,10 +27,11 @@ class VideoResumeEvaluator:
     1. Did the Speaker Speak with Confidence? (One line answer)
     2. Did the speaker vary their tone, speed, and volume while delivering the speech/presentation? Here are the details provided about the tone, speed, pace, and volume, {audio_metrics}, I want you 
     to give the answer in a sentence format, (For ex : The Tone and Volume was appropriate. you could have maintained a steady Speed in Delivery. A few Words were pronounced very fast), I want you to give the answer in a proper sentence like the example, and doesn't provide the numerical metrics to user, it should be in sentence, but dont tell like, dont tell your that your tone was neutrl/sad/happy, say that your maintained a good tone, this is an example
-    3. Did the speech have a structure of Opening, Body and Conclusion? (2-3 lines explanation pointing out the mistake or Appreciation)
-    4. Was the overall “Objective” of the speech delivered clearly? (2-3 lines explanation about how good or bad it was)
-    5. Was the content of the presentation/speech brief and to the point, or did it include unnecessary details that may have distracted or confused the audience? (2-3 lines descriptive answer)
-    6. Was the content of the presentation/speech engaging, and did it capture the audience’s attention?  (2-3 lines explanation about how good or bad it was)
+
+    3. Did the speech have a structure of Opening, Body and Conclusion? (Give 2-3 line Explanation, no straight answers or marks should be provided, i want descriptive answers, this is mandatory)
+    4. Was the overall “Objective” of the speech delivered clearly? (Give 2-3 line Explanation, no straight answers or marks should be provided, i want descriptive answers, this is mandatory)
+    5. Was the content of the presentation/speech brief and to the point, or did it include unnecessary details that may have distracted or confused the audience? (Give 2-3 line Explanation, no straight answers or marks should be provided, i want descriptive answers, this is mandatory)
+    6. Was the content of the presentation/speech engaging, and did it capture the audience’s attention?  (Give 2-3 line Explanation, no straight answers or marks should be provided, i want descriptive answers, this is mandatory)
     7. Was the content of the presentation/speech relevant to the objective of the presentation?  (3-4 lines Descriptive Answer)
     8. Was the content of the presentation/speech clear and easy to understand?  (2-3 lines explanation about hwo good or bad it was)
     9. Did the speaker add relevant examples, anecdotes and data to back their content? (2-3 lines descriptive answer)
