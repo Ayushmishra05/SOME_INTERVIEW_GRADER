@@ -1,9 +1,7 @@
 import io
 import tempfile
 import moviepy.editor as mp
-import whisper
 import json
-import streamlit as st
 from groq import Groq
 # from transcriptionimprover import TranscriptionImprover 
 import ffmpeg 
@@ -19,7 +17,7 @@ class VideoTranscriber:
         # self.model = whisper.load_model("small")
         self.target_size_kb = 50000 
         self.client = Groq()
-        self.compressed_audio_path = "audio/audio.wav"
+        self.compressed_audio_path = "audio/audio_conpressed.wav"
 
     # def extract_audio(self):
     def extract_audio(self):
@@ -100,3 +98,8 @@ class VideoTranscriber:
         print(f"Transcription results saved to {self.output_json_path}")
         return data
 
+
+
+# if __name__ == "__main__":
+#     transcriber = VideoTranscriber("video.mp4"  , "audio/audio.wav" , "json/transcription_output.json")
+#     transcriber.transcribe()

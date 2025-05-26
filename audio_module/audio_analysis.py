@@ -67,72 +67,54 @@ def get_volume_metrics(audio_path):
 
 def get_speaking_speed(audio_path):
     recognizer = sr.Recognizer()
-    with sr.AudioFile(audio_path) as source:
-        audio_data = recognizer.record(source)
     try:
+        with sr.AudioFile(audio_path) as source:
+            audio_data = recognizer.record(source)
         transcription = recognizer.recognize_google(audio_data)
         words = transcription.split()
         y, sample_rate = librosa.load(audio_path, sr=None, mono=True)
         duration = librosa.get_duration(y=y, sr=sample_rate)
         wpm = (len(words) / duration) * 60 if duration > 0 else 0
-        print(f"Transcription: {transcription}")
+
     except sr.UnknownValueError:
-        print("Speech Recognition could not understand audio.")
         wpm = 0
     except Exception as e:
-        print("Error in speech recognition:", e)
         wpm = 0
     return wpm
 
 def analyze_audio_metrics(audio_path, transcription_json_path, segment_duration_ms=5000):
-    """
-    Analyze the audio file to compute:
-      - Average volume (dBFS) and its standard deviation over segments.
-      - Speaking speed (words per minute) computed from transcription JSON.
-      - Predicted tone using the pretrained model.
-    
-    Returns a dictionary with:
-      "average_volume": float,
-      "volume_std": float,
-      "speaking_speed": float,
-      "predicted_tone": str
-    """
-    # Load audio using pydub.
-    audio = AudioSegment.from_file(audio_path)
-    average_volume = float(audio.dBFS)
-    
-    volumes = []
-    for i in range(0, len(audio), segment_duration_ms):
-        segment = audio[i:i+segment_duration_ms]
-        v = float(segment.dBFS)
-        if math.isfinite(v):
-            volumes.append(v)
-    volume_std = statistics.stdev(volumes) if len(volumes) > 1 else 0
+    try:
+        # Load audio using pydub.
+        audio = AudioSegment.from_file(audio_path)
+        average_volume = float(audio.dBFS)
 
-    # Compute speaking speed using the transcription JSON.
-    with open(transcription_json_path, 'r') as f:
-        transcription_data = json.load(f)
-    full_text = " ".join(seg.get("text", "") for seg in transcription_data)
-    total_words = len(re.findall(r'\w+', full_text))
-    speaking_time_seconds = sum(seg.get("end", 0) - seg.get("start", 0) for seg in transcription_data)
-    speaking_time_minutes = speaking_time_seconds / 60 if speaking_time_seconds > 0 else 1
-    words_per_minute = total_words / speaking_time_minutes
+        volumes = []
+        for i in range(0, len(audio), segment_duration_ms):
+            segment = audio[i:i+segment_duration_ms]
+            v = float(segment.dBFS)
+            if math.isfinite(v):
+                volumes.append(v)
+        volume_std = statistics.stdev(volumes) if len(volumes) > 1 else 0
 
-    predicted_tone = predict_tone(audio_path)
-    speaking_speed = words_per_minute
+        # Compute speaking speed using the transcription JSON.
+        with open(transcription_json_path, 'r') as f:
+            transcription_data = json.load(f)
+        
+        full_text = " ".join(seg.get("text", "") for seg in transcription_data)
+        total_words = len(re.findall(r'\w+', full_text))
+        speaking_time_seconds = sum(seg.get("end", 0) - seg.get("start", 0) for seg in transcription_data)
+        speaking_time_minutes = speaking_time_seconds / 60 if speaking_time_seconds > 0 else 1
+        words_per_minute = total_words / speaking_time_minutes
 
-    return str({
-        "average_volume": round(average_volume, 2),
-        "volume_std": round(volume_std, 2),
-        "speaking_speed": round(speaking_speed, 2),
-        "predicted_tone": predicted_tone
-    })
+        predicted_tone = predict_tone(audio_path)
+        speaking_speed = words_per_minute
 
-if __name__ == '__main__':
-    test_audio_path = "audio/"  # Replace with a valid test audio file.
-    test_transcription = "transcription_output.json"  # Replace with your transcription JSON file.
-    metrics = analyze_audio_metrics(test_audio_path, test_transcription)
-    print("Audio Analysis Metrics:")
-    print(metrics)
-    tone = predict_tone(test_audio_path)
-    print("Predicted Tone:", tone)
+
+        return {
+            "average_volume": round(average_volume, 2),
+            "volume_std": round(volume_std, 2),
+            "speaking_speed": round(speaking_speed, 2),
+            "predicted_tone": predicted_tone
+        }
+    except Exception as e:
+        return {"error": str(e)}

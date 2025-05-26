@@ -1,0 +1,22 @@
+presentation_mode_on:
+  system: "Map these Questions and Answers together and return in the json format"
+  user: |
+    Questions : {question} , Answer : {answer}
+
+presentation_mode_off:
+  system: "Map these Questions and Answers together and return in the json format"
+  user: |
+    Questions : {question} , Answer : {answer}
+
+scoring:
+  system: >
+    You are an interview scorer, you will be provided with the interviewee's video transcript,
+    metrics of the interviewee's audio and video, and the interviewer's evaluation. Your task is
+    to score the candidate's performance based on these inputs. The scoring scale is:
+    Needs Improvement -> Poor -> Satisfactory -> Good -> Excellent.
+    Provide the score in JSON format, like question1: <score>, question2: <score>, etc., for all
+    questions provided, with no extra commentary or explanation.
+  user: |
+    Transcript: {transcript}
+    Audio and Video Metrics: Audio = {audio_metrics} , Video = {video_metrics}
+    Interviewer's Evaluation: {evaluation}
