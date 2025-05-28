@@ -10,27 +10,32 @@ import tensorflow as tf
 from tensorflow.keras.models import load_model
 from sklearn.preprocessing import LabelEncoder
 import joblib
-import speech_recognition as sr  # Ensure this package is installed
+import speech_recognition as sr
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-# Tone model paths (adjust if needed)
-TONE_MODEL_PATH = "model.h5"          # Update path if necessary
-SCALER_PATH = "scaler.pkl"            # Update path if necessary
-ENCODER_PATH = "label_encoder.pkl"    # Update path if necessary
+def label_encoder(label): 
+    mapping = {
+        "low": 0,
+        "neutral": 1,
+        "high": 2
+    }
+    try:
+        return mapping[label.lower()]
+    except KeyError:
+        raise ValueError(f"Invalid label '{label}'. Expected one of: {list(mapping.keys())}")
 
-# Attempt to load the pretrained tone model and its associated scaler/encoder.
+# Tone model paths (adjust if needed)
+TONE_MODEL_PATH = r"D:\SOME_UPDATED\SOME_\audio_module\model.h5"
+
+# Attempt to load the pretrained tone model
 try:
     tone_model = load_model(TONE_MODEL_PATH)
     print("Tone model loaded successfully.")
-    scaler = joblib.load(SCALER_PATH)
-    label_encoder = joblib.load(ENCODER_PATH)
 except Exception as e:
-    print("Tone model or associated files not loaded:", e)
+    print("Tone model not loaded:", e)
     tone_model = None
-    scaler = None
-    label_encoder = None
 
 def extract_mfcc(audio_path, max_len=40):
     signal, sample_rate = librosa.load(audio_path, sr=None, mono=True)
@@ -40,22 +45,23 @@ def extract_mfcc(audio_path, max_len=40):
         mfcc = np.pad(mfcc, pad_width=((0, 0), (0, pad_width)), mode='constant')
     else:
         mfcc = mfcc[:, :max_len]
-    mfcc_mean = np.mean(mfcc.T, axis=0)
-    return mfcc_mean
+    # Do NOT take the mean; keep the 2D shape [n_mfcc, max_len]
+    return mfcc
 
-def predict_emotion(audio_path, model, label_encoder):
-    mfcc_2d = extract_mfcc(audio_path, max_len=40)
-    mfcc_4d = mfcc_2d[np.newaxis, ..., np.newaxis]
+def predict_emotion(audio_path, model):
+    mfcc_2d = extract_mfcc(audio_path, max_len=40)  # Shape: [13, 40]
+    mfcc_4d = mfcc_2d[np.newaxis, ..., np.newaxis]  # Shape: [1, 13, 40, 1]
     predictions = model.predict(mfcc_4d)
     class_index = np.argmax(predictions, axis=-1)[0]
-    predicted_label = label_encoder.inverse_transform([class_index])[0]
+    reverse_mapping = {0: "low", 1: "neutral", 2: "high"}
+    predicted_label = reverse_mapping[class_index]
     return predicted_label
 
-def predict_tone(file_path: str):
-    if tone_model is None or scaler is None or label_encoder is None:
-        print("Tone model components missing; using default tone 'neutral'.")
+def predict_tone(audio_path: str):
+    if tone_model is None:
+        print("Tone model missing; using default tone 'neutral'.")
         return "neutral"
-    predicted_emotion = predict_emotion(file_path, tone_model, label_encoder)
+    predicted_emotion = predict_emotion(audio_path, tone_model)
     return predicted_emotion
 
 def get_volume_metrics(audio_path):
@@ -97,7 +103,6 @@ def analyze_audio_metrics(audio_path, transcription_json_path, segment_duration_
       "speaking_speed": float,
       "predicted_tone": str
     """
-    # Load audio using pydub.
     audio = AudioSegment.from_file(audio_path)
     average_volume = float(audio.dBFS)
     
@@ -109,7 +114,6 @@ def analyze_audio_metrics(audio_path, transcription_json_path, segment_duration_
             volumes.append(v)
     volume_std = statistics.stdev(volumes) if len(volumes) > 1 else 0
 
-    # Compute speaking speed using the transcription JSON.
     with open(transcription_json_path, 'r') as f:
         transcription_data = json.load(f)
     full_text = " ".join(seg.get("text", "") for seg in transcription_data)
@@ -121,16 +125,20 @@ def analyze_audio_metrics(audio_path, transcription_json_path, segment_duration_
     predicted_tone = predict_tone(audio_path)
     speaking_speed = words_per_minute
 
-    return str({
+    audio_metric = {
         "average_volume": round(average_volume, 2),
         "volume_std": round(volume_std, 2),
         "speaking_speed": round(speaking_speed, 2),
         "predicted_tone": predicted_tone
-    })
+    }
+    with open("json/audio_metrics.json", 'w') as fp:
+        json.dump(audio_metric, fp=fp)
+
+    return str(audio_metric)
 
 if __name__ == '__main__':
-    test_audio_path = "audio/"  # Replace with a valid test audio file.
-    test_transcription = "transcription_output.json"  # Replace with your transcription JSON file.
+    test_audio_path = "audio/audio.wav"
+    test_transcription = "json/transcription_output.json"
     metrics = analyze_audio_metrics(test_audio_path, test_transcription)
     print("Audio Analysis Metrics:")
     print(metrics)

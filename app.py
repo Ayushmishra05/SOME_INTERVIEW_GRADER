@@ -5,14 +5,15 @@ from LLM_Module.newtranscriber import VideoTranscriber
 from LLM_Module.Overall_Analyser import VideoResumeEvaluator
 from video_module.VideoEvaluation import VideoAnalyzer 
 from LLM_Module.Qualitative_Analyser import VideoResumeEvaluator2
-from report_generation_module.PDF_Generator import create_combined_pdf
+from report_generation_module.PDF_Generator2 import create_combined_pdf
 from video_module.drive_video_download import download_drive_url
 from LLM_Module.score_analyser import score_analyser
 import os
+from audio_module.audio_analysis import analyze_audio_metrics
 os.environ['FLASK_RUN_EXTRA_FILES'] = ''
 
 app = Flask(__name__)
-app.secret_key = "your_secret_key_here"  # needed for flashing messages
+app.secret_key = "your_secret_key_here" 
 
 for folder in ["json", "reports", os.path.join("static", "uploads")]:
     os.makedirs(os.path.join(app.root_path, folder), exist_ok=True)
@@ -64,11 +65,13 @@ def index():
                 transcription_json_path = os.path.join(app.root_path, "json", "transcription_output.json")
                 transcriber = VideoTranscriber(f, audio_path, transcription_json_path)
                 transcription_output = transcriber.transcribe()
-
+                
+            analysis_audio = analyze_audio_metrics(audio_path , transcription_json_path)
             evaluator = VideoResumeEvaluator()
             quality_evaluator = VideoResumeEvaluator2() 
         
             eval_results = evaluator.evaluate_transcription(transcription_output) 
+            print("Audio Analysis --> ", analysis_audio)
             print("AI Results --> " , eval_results)
             output = score_analyser(eval_results)
             with open(os.path.join(app.root_path, "json", "scores.json") , 'w') as fp:

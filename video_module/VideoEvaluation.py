@@ -157,3 +157,5 @@ class VideoAnalyzer:
             "Smile Score": 3,
             "Energetic Start": 2
         }
+
+

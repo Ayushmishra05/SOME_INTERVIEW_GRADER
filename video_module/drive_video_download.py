@@ -14,5 +14,3 @@ def download_drive_url(url):
 
     else:
         print("Invalid Google Drive URL!")
-
-

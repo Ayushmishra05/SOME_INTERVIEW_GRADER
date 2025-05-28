@@ -1,9 +1,7 @@
 import io
 import tempfile
 import moviepy.editor as mp
-import whisper
 import json
-import streamlit as st
 from groq import Groq
 # from transcriptionimprover import TranscriptionImprover 
 import ffmpeg 
