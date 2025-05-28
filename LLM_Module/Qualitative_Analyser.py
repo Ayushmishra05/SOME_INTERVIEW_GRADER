@@ -6,10 +6,6 @@ from langchain_core.output_parsers import JsonOutputParser
 import json
 class VideoResumeEvaluator2:
     def __init__(self, model_name="llama-3.3-70b-versatile"):
-        """
-        Initialize the evaluator with the specified LLM model and
-        preserve the new functionality (cleaning + tone analysis).
-        """
         
         self.llm = ChatGroq(
             model=model_name, api_key = "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"

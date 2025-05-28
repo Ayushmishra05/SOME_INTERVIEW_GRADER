@@ -1,7 +1,5 @@
-import json
+import whisper 
 
-with open(r'json/scores.json', 'r') as fp:
-    quality_data = json.load(fp)
-
-
-midval = list(quality_data.values())
+model = whisper.load_model("base") 
+results = model.transcribe(r"D:\SOME_UPDATED\SOME_\static\uploads\video.mp4")
+print(results)

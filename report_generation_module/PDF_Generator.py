@@ -68,7 +68,7 @@ def create_combined_pdf(logo_path, json_path):
     llm_answers = []
     if 'LLM' in tabular_data:
         llm_answers = re.split(r'\n(?=\d+\.)', tabular_data['LLM'])
-
+            
     doc = SimpleDocTemplate("reports/combined_report.pdf", 
                             pagesize=letter,
                             topMargin=1.5*inch,
