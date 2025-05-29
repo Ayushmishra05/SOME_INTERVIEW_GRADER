@@ -2,12 +2,12 @@ from flask import Flask, render_template, request, redirect, url_for, send_file,
 import os
 import json
 from LLM_Module.newtranscriber import VideoTranscriber
-from LLM_Module.Overall_Analyser import VideoResumeEvaluator
+from LLM_Module.Overall_Analyser2 import VideoResumeEvaluator
 from video_module.VideoEvaluation import VideoAnalyzer 
-from LLM_Module.Qualitative_Analyser import VideoResumeEvaluator2
+from LLM_Module.Qualitative_Analyser2 import VideoResumeEvaluator2
 from report_generation_module.PDF_Generator2 import create_combined_pdf
 from video_module.drive_video_download import download_drive_url
-from LLM_Module.score_analyser import score_analyser
+from LLM_Module.score_analyser2 import score_analyser
 import os
 from audio_module.audio_analysis import analyze_audio_metrics
 os.environ['FLASK_RUN_EXTRA_FILES'] = ''
