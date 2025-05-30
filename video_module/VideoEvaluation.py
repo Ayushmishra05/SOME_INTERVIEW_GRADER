@@ -152,10 +152,10 @@ class VideoAnalyzer:
             energetic_score = min(5, int(positive_ratio * 5)) 
         print(avg_posture , avg_eye , smile_score )
         return {
-            "posture": 4,
-            "Eye Contact": 4,
-            "Smile Score": 3,
-            "Energetic Start": 2
+            "posture": round(avg_posture),
+            "Eye Contact": round(avg_eye),
+            "Smile Score": round(smile_score),
+            "Energetic Start": round(avg_posture + avg_eye + smile_score / 3)
         }
 
 
