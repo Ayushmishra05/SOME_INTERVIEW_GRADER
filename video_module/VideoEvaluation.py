@@ -21,7 +21,7 @@ class VideoAnalyzer:
         self.current_cooldown = 0
 
     def load_model(self):
-        model_url = "https://tfhub.dev/google/movenet/singlepose/lightning/4"
+        model_url = r"C:\Users\ayush\.cache\kagglehub\models\google\movenet\tensorFlow2\singlepose-lightning\4"
         model = hub.load(model_url)
         return model.signatures['serving_default']
 

@@ -3,12 +3,13 @@ import os
 import json
 from LLM_Module.newtranscriber import VideoTranscriber
 from LLM_Module.Overall_Analyser2 import VideoResumeEvaluator
-from video_module.VideoEvaluation import VideoAnalyzer 
+from video_module.veval import analyze_video_file 
 from LLM_Module.Qualitative_Analyser2 import VideoResumeEvaluator2
 from report_generation_module.PDF_Generator2 import create_combined_pdf
 from video_module.drive_video_download import download_drive_url
 from LLM_Module.score_analyser2 import score_analyser
 import os
+# from video_module.exp_match import analyze_video_smile
 from audio_module.audio_analysis import analyze_audio_metrics
 os.environ['FLASK_RUN_EXTRA_FILES'] = ''
 
@@ -52,20 +53,28 @@ def index():
                 video_file.save(file_path)
                 video_filename = "video.mp4"
 
-            with open(file_path, 'rb') as f:
-                analyzer = VideoAnalyzer(f)
-                analysis_output = analyzer.analyze_video()
-
-            output_json_path = os.path.join(app.root_path, "json", "output.json")
-            with open(output_json_path, 'w', encoding='utf-8') as json_file:
-                json.dump(analysis_output, json_file, ensure_ascii=False, indent=4)
 
             with open(file_path, 'rb') as f:
                 audio_path = os.path.join(app.root_path, "audiofile.wav")
                 transcription_json_path = os.path.join(app.root_path, "json", "transcription_output.json")
                 transcriber = VideoTranscriber(f, audio_path, transcription_json_path)
                 transcription_output = transcriber.transcribe()
-                
+
+            # with open(file_path, 'rb') as f:
+            analysis_output = analyze_video_file(file_path)
+            # analysis_output = analyzer.analyze_video()
+
+            # smile = analyze_video_smile(file_path , transcription_json_path)
+            # analysis_output.update({"Smile Score" : smile})
+
+            output_json_path = os.path.join(app.root_path, "json", "output.json")
+            with open(output_json_path, 'w', encoding='utf-8') as json_file:
+                json.dump(analysis_output, json_file, ensure_ascii=False, indent=4)
+            
+
+            # with open()
+
+
             analysis_audio = analyze_audio_metrics(audio_path , transcription_json_path)
             evaluator = VideoResumeEvaluator()
             quality_evaluator = VideoResumeEvaluator2() 
