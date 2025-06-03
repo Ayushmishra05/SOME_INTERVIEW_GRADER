@@ -62,23 +62,13 @@ def index():
 
             # with open(file_path, 'rb') as f:
             analysis_output = analyze_video_file(file_path)
-            # analysis_output = analyzer.analyze_video()
-
-            # smile = analyze_video_smile(file_path , transcription_json_path)
-            # analysis_output.update({"Smile Score" : smile})
-
             output_json_path = os.path.join(app.root_path, "json", "output.json")
             with open(output_json_path, 'w', encoding='utf-8') as json_file:
                 json.dump(analysis_output, json_file, ensure_ascii=False, indent=4)
-            
-
-            # with open()
-
-
+          
             analysis_audio = analyze_audio_metrics(audio_path , transcription_json_path)
             evaluator = VideoResumeEvaluator()
             quality_evaluator = VideoResumeEvaluator2() 
-        
             eval_results = evaluator.evaluate_transcription(transcription_output) 
             print("Audio Analysis --> ", analysis_audio)
             print("AI Results --> " , eval_results)
@@ -86,7 +76,6 @@ def index():
             with open(os.path.join(app.root_path, "json", "scores.json") , 'w') as fp:
                 json.dump(output, fp)
             quality_evaluator.evaluate_transcription(transcription_output)
-
             with open(output_json_path, 'r') as f:
                 data = json.load(f)
             data.update({
