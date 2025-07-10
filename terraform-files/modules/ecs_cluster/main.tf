@@ -46,7 +46,7 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_attachment" {
 }
 
 # ECS Task Definition using the execution role ARN
-resource "aws_ecs_task_definition" "cms_task" {
+resource "aws_ecs_task_definition" "some_task" {
   family                   = "${local.app_name}-task"
   requires_compatibilities = ["FARGATE"]
   cpu                      = var.cpu
@@ -113,7 +113,7 @@ resource "aws_cloudwatch_log_group" "ecs_logs" {
 }
 
 
-resource "aws_ecs_cluster" "cms_cluster" {
+resource "aws_ecs_cluster" "some_cluster" {
   name = var.ClusterName
 
   setting {
@@ -121,7 +121,7 @@ resource "aws_ecs_cluster" "cms_cluster" {
     value = "enabled"
   }
 }
-resource "aws_lb" "cms_lb" {
+resource "aws_lb" "some_lb" {
   name               = var.load_balancer #"${local.app_name}-lb"
   internal           = false
   load_balancer_type = "application"
@@ -133,7 +133,7 @@ resource "aws_lb" "cms_lb" {
   ]
 }
 
-resource "aws_lb_target_group" "cms_tg" {
+resource "aws_lb_target_group" "some_tg" {
   name        = var.target_group
   port        = 80
   protocol    = "HTTP"
@@ -146,8 +146,8 @@ resource "aws_lb_target_group" "cms_tg" {
   }
 }
 
-resource "aws_lb_listener" "cms_https_listener" {
-  load_balancer_arn = aws_lb.cms_lb.arn
+resource "aws_lb_listener" "some_https_listener" {
+  load_balancer_arn = aws_lb.some_lb.arn
   port              = 443
   protocol          = "HTTPS"
   ssl_policy        = "ELBSecurityPolicy-2016-08"
@@ -155,14 +155,14 @@ resource "aws_lb_listener" "cms_https_listener" {
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.cms_tg.arn
+    target_group_arn = aws_lb_target_group.some_tg.arn
   }
 }
 
-resource "aws_ecs_service" "cms_service" {
+resource "aws_ecs_service" "some_service" {
   name            = "${local.app_name}-service"
-  cluster         = aws_ecs_cluster.cms_cluster.id
-  task_definition = aws_ecs_task_definition.cms_task.arn
+  cluster         = aws_ecs_cluster.some_cluster.id
+  task_definition = aws_ecs_task_definition.some_task.arn
   desired_count   = 1
   launch_type     = "FARGATE"
   platform_version = "LATEST"
@@ -178,27 +178,27 @@ resource "aws_ecs_service" "cms_service" {
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.cms_tg.arn
+    target_group_arn = aws_lb_target_group.some_tg.arn
     container_name   = var.container_name
     container_port   = 80
   }
 
-  depends_on = [aws_lb_listener.cms_https_listener]
+  depends_on = [aws_lb_listener.some_https_listener]
 }
-resource "aws_appautoscaling_target" "cms_scaling_target" {
+resource "aws_appautoscaling_target" "some_scaling_target" {
   max_capacity       = 5
   min_capacity       = 1
-  resource_id        = "service/${aws_ecs_cluster.cms_cluster.name}/${aws_ecs_service.cms_service.name}"
+  resource_id        = "service/${aws_ecs_cluster.some_cluster.name}/${aws_ecs_service.some_service.name}"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
 }
 
-resource "aws_appautoscaling_policy" "cms_cpu_tracking_policy" {
-  name               = "cms-cpu-tracking"
+resource "aws_appautoscaling_policy" "some_cpu_tracking_policy" {
+  name               = "some-cpu-tracking"
   policy_type        = "TargetTrackingScaling"
-  resource_id        = aws_appautoscaling_target.cms_scaling_target.resource_id
-  scalable_dimension = aws_appautoscaling_target.cms_scaling_target.scalable_dimension
-  service_namespace  = aws_appautoscaling_target.cms_scaling_target.service_namespace
+  resource_id        = aws_appautoscaling_target.some_scaling_target.resource_id
+  scalable_dimension = aws_appautoscaling_target.some_scaling_target.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.some_scaling_target.service_namespace
 
   target_tracking_scaling_policy_configuration {
     predefined_metric_specification {
@@ -212,8 +212,8 @@ resource "aws_appautoscaling_policy" "cms_cpu_tracking_policy" {
 }
 
 # Step scaling - scale out
-resource "aws_cloudwatch_metric_alarm" "cms_high_cpu" {
-  alarm_name          = "cms-high-cpu"
+resource "aws_cloudwatch_metric_alarm" "some_high_cpu" {
+  alarm_name          = "some-high-cpu"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 2
   metric_name         = "CPUUtilization"
@@ -223,17 +223,17 @@ resource "aws_cloudwatch_metric_alarm" "cms_high_cpu" {
   threshold           = 80
   alarm_description   = "Scale out if CPU > 80%"
   dimensions = {
-    ClusterName  = aws_ecs_cluster.cms_cluster.name
-    ServiceName  = aws_ecs_service.cms_service.name
+    ClusterName  = aws_ecs_cluster.some_cluster.name
+    ServiceName  = aws_ecs_service.some_service.name
   }
 }
 
 resource "aws_appautoscaling_policy" "step_scale_out" {
-  name               = "cms-step-scale-out"
+  name               = "some-step-scale-out"
   policy_type        = "StepScaling"
-  resource_id        = aws_appautoscaling_target.cms_scaling_target.resource_id
-  scalable_dimension = aws_appautoscaling_target.cms_scaling_target.scalable_dimension
-  service_namespace  = aws_appautoscaling_target.cms_scaling_target.service_namespace
+  resource_id        = aws_appautoscaling_target.some_scaling_target.resource_id
+  scalable_dimension = aws_appautoscaling_target.some_scaling_target.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.some_scaling_target.service_namespace
 
   step_scaling_policy_configuration {
     adjustment_type         = "ChangeInCapacity"
@@ -246,12 +246,12 @@ resource "aws_appautoscaling_policy" "step_scale_out" {
     }
   }
 
-  depends_on = [aws_cloudwatch_metric_alarm.cms_high_cpu]
+  depends_on = [aws_cloudwatch_metric_alarm.some_high_cpu]
 }
 
 # Step scaling - scale in
-resource "aws_cloudwatch_metric_alarm" "cms_low_cpu" {
-  alarm_name          = "cms-low-cpu"
+resource "aws_cloudwatch_metric_alarm" "some_low_cpu" {
+  alarm_name          = "some-low-cpu"
   comparison_operator = "LessThanThreshold"
   evaluation_periods  = 2
   metric_name         = "CPUUtilization"
@@ -261,17 +261,17 @@ resource "aws_cloudwatch_metric_alarm" "cms_low_cpu" {
   threshold           = 40
   alarm_description   = "Scale in if CPU < 40%"
   dimensions = {
-    ClusterName  = aws_ecs_cluster.cms_cluster.name
-    ServiceName  = aws_ecs_service.cms_service.name
+    ClusterName  = aws_ecs_cluster.some_cluster.name
+    ServiceName  = aws_ecs_service.some_service.name
   }
 }
 
 resource "aws_appautoscaling_policy" "step_scale_in" {
-  name               = "cms-step-scale-in"
+  name               = "some-step-scale-in"
   policy_type        = "StepScaling"
-  resource_id        = aws_appautoscaling_target.cms_scaling_target.resource_id
-  scalable_dimension = aws_appautoscaling_target.cms_scaling_target.scalable_dimension
-  service_namespace  = aws_appautoscaling_target.cms_scaling_target.service_namespace
+  resource_id        = aws_appautoscaling_target.some_scaling_target.resource_id
+  scalable_dimension = aws_appautoscaling_target.some_scaling_target.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.some_scaling_target.service_namespace
 
   step_scaling_policy_configuration {
     adjustment_type         = "ChangeInCapacity"
@@ -284,6 +284,6 @@ resource "aws_appautoscaling_policy" "step_scale_in" {
     }
   }
 
-  depends_on = [aws_cloudwatch_metric_alarm.cms_low_cpu]
+  depends_on = [aws_cloudwatch_metric_alarm.some_low_cpu]
 }
 

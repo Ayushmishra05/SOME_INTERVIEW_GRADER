@@ -9,9 +9,7 @@ variable "task_execution_role_name" {
   default = "ecsTaskExecutionRole"
 }
 
-# variable "app_name" {
-#   default = "cms-web-app"
-# }
+
 variable "app_name" {
   description = "Full app name. Leave null to auto-generate."
   type        = string
@@ -22,7 +20,7 @@ locals {
   app_name = (
     var.app_name != null    
     ? var.app_name
-    : "cms-web-app-${terraform.workspace}"
+    : "some-web-app-${terraform.workspace}"
   )
 }
 variable "region" {
@@ -30,7 +28,7 @@ variable "region" {
 }
 
 variable "container_name" {
-  default = "cms-web-repo"
+  default = "some-web-repo"
 }
 
 variable "cpu" {
