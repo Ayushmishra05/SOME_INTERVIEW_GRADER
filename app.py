@@ -112,4 +112,4 @@ def download_pdf():
     return send_file(pdf_path, as_attachment=True, download_name="evaluation_report.pdf")
 
 if __name__ == "__main__":
-    app.run(port = '5032',host = '0.0.0.0')
+    app.run(port = '80',host = '0.0.0.0')
