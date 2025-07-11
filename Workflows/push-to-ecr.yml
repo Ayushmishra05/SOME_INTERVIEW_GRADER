@@ -1,0 +1,25 @@
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::066208711325:role/github-actions-ecr-pusher
+          aws-region: ap-south-1
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build & Push Docker image
+        run: |
+          IMAGE_URI=$(aws sts get-caller-identity --query 'Account' --output text).dkr.ecr.ap-south-1.amazonaws.com/dev-some-api-repo:latest
+          docker build -t $IMAGE_URI .
+          docker push $IMAGE_URI
