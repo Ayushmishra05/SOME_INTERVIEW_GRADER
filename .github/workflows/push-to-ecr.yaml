@@ -27,6 +27,6 @@ jobs:
 
       - name: Build & Push Docker image
         run: |
-          IMAGE_URI=$(aws sts get-caller-identity --query 'Account' --output text).dkr.ecr.ap-south-1.amazonaws.com/dev-some-api-repo:latest
+          IMAGE_URI=066208711325.dkr.ecr.ap-south-1.amazonaws.com/dev-some-api-repo
           docker build -t $IMAGE_URI .
           docker push $IMAGE_URI
