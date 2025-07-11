@@ -1,8 +1,10 @@
 name: Build and push image to ECR
 
 on:
-  workflow_dispatch:
-  
+  push:
+    branches:
+      - cloud_arch
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
