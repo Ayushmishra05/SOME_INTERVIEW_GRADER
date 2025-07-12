@@ -1,2 +1,3 @@
 .env
 terraform-files/.terraform
+terraform-files/lambda/.terraform
