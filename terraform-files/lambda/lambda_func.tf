@@ -1,7 +1,7 @@
 data "archive_file" "lambda_zip" {
   type        = "zip"
   source_dir  = "${path.module}/lambda-code"
-  output_path = "${path.module}/lambda-code/video-upload.zip"
+  output_path = "${path.module}/video-upload.zip"
 }
 
 module "s3_bucket" {
