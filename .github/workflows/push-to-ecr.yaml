@@ -3,7 +3,7 @@ name: Build and push image to ECR
 on:
   push:
     branches:
-      - cloud_arch
+      - cloud_arch1
 
 jobs:
   build-and-push:

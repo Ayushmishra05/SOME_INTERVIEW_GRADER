@@ -12,7 +12,6 @@ terraform {
     workspace_key_prefix = "terraform_files"
     region               = "ap-south-1"
     encrypt              = true
-    use_lockfile         = true
   }
 }
 
