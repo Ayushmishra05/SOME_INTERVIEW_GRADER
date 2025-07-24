@@ -1,4 +1,4 @@
-=name: CI/CD Pipeline with Docker Deployment
+name: CI/CD Pipeline with Docker Deployment
 
 on:
   push:
@@ -13,7 +13,6 @@ on:
         default: dev
         type: choice
         options: [dev, test, prod]
-
 permissions:
   id-token: write
   contents: read
@@ -23,21 +22,12 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+      TF_ENV: ${{ github.event.inputs.tf_env || github.ref_name }}
       AWS_REGION: ap-south-1
       AWS_DEFAULT_REGION: ap-south-1
 
     steps:
-      - name: Set TF_ENV value
-        run: |
-          if [[ "${{ github.event.inputs.tf_env }}" != "" ]]; then
-            echo "TF_ENV=${{ github.event.inputs.tf_env }}" >> $GITHUB_ENV
-          else
-            echo "TF_ENV=${{ github.ref_name }}" >> $GITHUB_ENV
-          fi
-
-      - name: Debug - Print TF_ENV value
-        run: echo "TF_ENV is: $TF_ENV"
-
+  
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -55,6 +45,9 @@ jobs:
         with:
           terraform_version: 1.5.0
 
+      - name: Debug - Print Environment
+        run: echo "Environment is set------------------------ to $TF_ENV"
+
       - name: Terraform Init
         working-directory: ./terraform-files
         run: terraform init -reconfigure
@@ -70,14 +63,17 @@ jobs:
       - name: Terraform Plan
         working-directory: ./terraform-files
         run: |
-          echo "Planning for environment: $TF_ENV"
-          terraform plan -var="environment=$TF_ENV" -out=tfplan
+          terraform plan \
+            -var="environment=$TF_ENV" \
+            -out=tfplan
 
       - name: Terraform Apply
         if: github.event_name != 'pull_request'
         working-directory: ./terraform-files
-        run: terraform apply -auto-approve tfplan
-
+        run: |
+          
+          terraform apply -auto-approve tfplan
+      #terraform destroy -auto-approve -var="environment=$TF_ENV"
       - name: Login to Amazon ECR
         run: |
           aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin 033464272864.dkr.ecr.$AWS_REGION.amazonaws.com
