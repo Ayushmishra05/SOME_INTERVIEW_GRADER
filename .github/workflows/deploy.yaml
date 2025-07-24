@@ -64,7 +64,7 @@ jobs:
         working-directory: ./terraform-files
         run: |
           echo "Running plan for environment: $TF_ENV"
-          terraform plan -var="environment=$TF_ENV" -out=tfplan
+          terraform plan 
 
       - name: Terraform Apply
         if: github.event_name != 'pull_request'
