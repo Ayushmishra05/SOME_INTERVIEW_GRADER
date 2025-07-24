@@ -2,7 +2,7 @@ name: CI/CD Pipeline with Docker Deployment
 
 on:
   push:
-    branches: [dev, test, prod, cloud_arch]
+    branches: [dev, test, prod]
   pull_request:
     branches: [dev, test, prod]
   workflow_dispatch:
