@@ -27,6 +27,8 @@ jobs:
       AWS_DEFAULT_REGION: ap-south-1
 
     steps:
+      - name: Debug - Print TF_ENV value
+        run: echo "TF_ENV is: $TF_ENV"
       - name: Checkout code
         uses: actions/checkout@v4
 
