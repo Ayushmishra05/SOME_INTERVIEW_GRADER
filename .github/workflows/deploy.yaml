@@ -70,7 +70,7 @@ jobs:
         if: github.event_name != 'pull_request'
         working-directory: ./terraform-files
         run: |
-          
+          echo "Applying Terraform changes for environment: $TF_ENV"
           terraform apply -auto-approve tfplan
       #terraform destroy -auto-approve -var="environment=$TF_ENV"
       - name: Login to Amazon ECR
