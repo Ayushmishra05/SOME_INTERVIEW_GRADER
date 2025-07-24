@@ -194,7 +194,7 @@ jobs:
           echo "Applying Terraform changes for environment: $TF_ENV"
           terraform apply -auto-approve tfplan
 
-      - name: Login to Amazon ECR
+      - name: Login to Amazon ECR registry
         run: |
           aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin 066208711325.dkr.ecr.$AWS_REGION.amazonaws.com
 
