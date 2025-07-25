@@ -13,6 +13,29 @@ resource "aws_iam_role" "lambda_exec" {
   })
 }
 
+resource "aws_iam_role_policy" "s3_upload" {
+  name = "s3-upload"
+  role = aws_iam_role.lambda_exec.id
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+            "s3:CreateMultipartUpload",
+            "s3:UploadPart",
+            "s3:CompleteMultipartUpload",
+            "s3:AbortMultipartUpload",
+            "s3:GetObject",
+            "s3:PutObject"
+        ],
+        Resource = "arn:aws:s3:::some-prod2025/*"
+      }
+    ]
+  })
+}
+
 resource "aws_iam_role_policy_attachment" "basic_execution" {
   role       = aws_iam_role.lambda_exec.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
