@@ -72,7 +72,7 @@ variable "api_stage_name" {
 
 variable "api_resource_path" {
   type    = string
-  default = "test"
+  default = "{proxy+}"
 }
 
 variable "aws_region" {

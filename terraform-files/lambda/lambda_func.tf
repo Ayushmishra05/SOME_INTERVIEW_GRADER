@@ -17,8 +17,7 @@ module "lambda_function" {
   handler           = var.lambda_handler
   runtime           = var.lambda_runtime
   role_name         = lookup(var.lambda_role_name, terraform.workspace)
-  log_retention     = var.lambda_log_retention
-
+  log_retention     = var.lambda_log_retention 
   bucket            = module.s3_bucket.bucket_id
   object_key        = module.s3_bucket.object_key
   source_code_hash  = data.archive_file.lambda_zip.output_base64sha256

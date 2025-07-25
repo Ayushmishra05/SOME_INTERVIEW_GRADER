@@ -130,3 +130,31 @@ variable "ClusterName" {
     prod = "some-cluster-prod"
   }
 }
+
+#SQS
+
+variable "queue_name" {
+    type = map(string)
+  default = {
+    
+    dev  = "some-queue-dev"
+    test =  "some-queue-test"
+    prod = "some-queue-prod"
+  }
+}
+
+#S3
+variable "source_bucket_arn" {
+  type = string
+  default = "arn:aws:s3:::some-prod2025"
+}
+
+variable "source_bucket_id" {
+  type = string
+  default = "some-prod2025"
+}
+
+variable "filter_prefix" {
+  type = string
+  default = "test-videos/"
+}
