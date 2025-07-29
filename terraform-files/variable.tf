@@ -78,7 +78,7 @@ variable "min_capacity" {
     type = map(number)
   default = {
     
-    dev  = 1
+    dev  = 3
     test = 1
     prod =1
   }
@@ -90,7 +90,7 @@ variable "max_capacity" {
     type = map(number)
   default = {
     
-    dev  = 2
+    dev  = 6
     test =  2
     prod = 2
   }

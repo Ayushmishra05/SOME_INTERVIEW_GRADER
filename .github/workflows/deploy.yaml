@@ -192,36 +192,36 @@ jobs:
         working-directory: ./terraform-files
         run: |
           echo "Applying Terraform changes for environment: $TF_ENV"
-         
-          terraform destroy -auto-approve -var="environment=$TF_ENV" 
-      # terraform apply -auto-approve tfplan
-      # - name: Login to Amazon ECR registry
-      #   run: |
-      #     aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin 066208711325.dkr.ecr.$AWS_REGION.amazonaws.com
+          terraform apply -auto-approve tfplan
+      #terraform destroy -auto-approve -var="environment=$TF_ENV" 
+      
+      - name: Login to Amazon ECR registry
+        run: |
+          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin 066208711325.dkr.ecr.$AWS_REGION.amazonaws.com
 
-      # - name: Build and Push Docker image with cache
-      #   uses: docker/build-push-action@v5
-      #   with:
-      #     context: .
-      #     push: true
-      #     tags: 066208711325.dkr.ecr.ap-south-1.amazonaws.com/${{ env.TF_ENV }}-some-api-repo:latest
-      #     platforms: linux/arm64
-      #     cache-from: type=local,src=/tmp/.buildx-cache
-      #     cache-to: type=local,dest=/tmp/.buildx-cache
+      - name: Build and Push Docker image with cache
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: 066208711325.dkr.ecr.ap-south-1.amazonaws.com/${{ env.TF_ENV }}-some-api-repo:latest
+          platforms: linux/arm64
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache
 
-      # - name: Restart ECS service
-      #   if: github.event_name != 'pull_request'
-      #   run: |
-      #     CLUSTER="some-cluster-${TF_ENV}"
-      #     SERVICE="some-web-app-${TF_ENV}-service"
-      #     TASKDEF=$(aws ecs list-task-definitions \
-      #                 --family-prefix some-web-app-${TF_ENV}-task \
-      #                 --sort DESC \
-      #                 --query 'taskDefinitionArns[0]' \
-      #                 --output text)
-      #     aws ecs update-service \
-      #       --cluster "$CLUSTER" \
-      #       --service "$SERVICE" \
-      #       --task-definition "$TASKDEF" \
-      #       --force-new-deployment \
-      #       --region "$AWS_REGION"
+      - name: Restart ECS service
+        if: github.event_name != 'pull_request'
+        run: |
+          CLUSTER="some-cluster-${TF_ENV}"
+          SERVICE="some-web-app-${TF_ENV}-service"
+          TASKDEF=$(aws ecs list-task-definitions \
+                      --family-prefix some-web-app-${TF_ENV}-task \
+                      --sort DESC \
+                      --query 'taskDefinitionArns[0]' \
+                      --output text)
+          aws ecs update-service \
+            --cluster "$CLUSTER" \
+            --service "$SERVICE" \
+            --task-definition "$TASKDEF" \
+            --force-new-deployment \
+            --region "$AWS_REGION"

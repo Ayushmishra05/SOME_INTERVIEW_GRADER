@@ -32,11 +32,11 @@ variable "container_name" {
 }
 
 variable "cpu" {
-  default = "1024"
+  default = "4096"
 }
 
 variable "memory" {
-  default = "3072"
+  default = "10240"
 }
 
 
