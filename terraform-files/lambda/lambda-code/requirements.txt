@@ -1,0 +1,3 @@
+aws-wsgi
+flask==2.2.5
+boto3
