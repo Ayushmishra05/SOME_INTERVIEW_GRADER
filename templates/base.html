@@ -1,328 +1,622 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Video Analysis & Report Generator</title>
-  
-  <!-- Custom CSS -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-  
-  <!-- Bootstrap CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-  
-  <!-- Animate.css -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
-  
-  <style>
-    :root {
-      --primary: #0090ab;
-      --secondary: #dd1a5b;
-      --accent: #4f2263;
-      --highlight: #ec7422;
-      --gradient-1: linear-gradient(135deg, #0090ab 0%, #4f2263 100%);
-      --gradient-2: linear-gradient(45deg, #dd1a5b 0%, #ec7422 100%);
-    }
-    
-    body {
-      background: #f8f9fa;
-      color: #4a4a4a;
-      font-family: 'Inter', sans-serif;
-      overflow-x: hidden;
-    }
-    
-    .navbar {
-      background: rgba(255, 255, 255, 0.95) !important;
-      backdrop-filter: blur(10px);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-    }
-    
-    .hero-section {
-      position: relative;
-      padding: 120px 0;
-      background: var(--gradient-1);
-      overflow: hidden;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SoME AI Video Analysis & Feedback Tool</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: helvetica-lt-pro, sans-serif;
+            font-style: normal;
+            font-weight: 400;
+            font-size: large;
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
 
-    .floating-blobs {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      z-index: 0;
-    }
+        :root {
+            --primary: #0090ab;
+            --secondary: #dd1a5b;
+            --accent: #4f2263;
+            --highlight: #ec7422;
+            --gradient-1: linear-gradient(135deg, #0090ab 0%, #4f2263 100%);
+            --gradient-2: linear-gradient(45deg, #dd1a5b 0%, #ec7422 100%);
+        }
 
-    .blob {
-      position: absolute;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 50%;
-      filter: blur(40px);
-      animation: float 20s infinite linear;
-    }
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
 
-    @keyframes float {
-      0% { transform: translate(0, 0) scale(1); }
-      25% { transform: translate(100px, -50px) scale(1.1); }
-      50% { transform: translate(-50px, 80px) scale(0.9); }
-      75% { transform: translate(-100px, -30px) scale(1.05); }
-      100% { transform: translate(0, 0) scale(1); }
-    }
+        /* Left Sidebar */
+        .sidebar {
+            width: 30%;
+            background: 
+                linear-gradient(49deg, rgba(168, 85, 247, 0.3) 0%, rgba(124, 58, 237, 0.2) 24%, transparent 50%),
+                #441c5b;
+            color: white;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        
+        .logo-section {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
 
-    .hero-content {
-      position: relative;
-      z-index: 2;
-      text-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    }
+        .logo {
+            width: 300px;
+            height: auto;
+            margin-bottom: 0.5rem;
+        }
 
-    .cta-button {
-      background: var(--gradient-2);
-      border: none;
-      padding: 16px 40px;
-      border-radius: 50px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      position: relative;
-      overflow: hidden;
-      transition: all 0.3s ease;
-    }
+        /* Sidebar Tabs */
+        .sidebar-tabs {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin: 1rem 0;
+            width: 100%;
+        }
 
-    .cta-button::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(
-        90deg,
-        transparent,
-        transparent
-      );
-      transition: 0.5s;
-    }
+        .sidebar-tab {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.8rem 1rem;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #fff;
+            background: rgba(255,255,255,0.05);
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+            text-align: left;
+        }
 
-    .cta-button:hover::after {
-      left: 100%;
-    }
+        .sidebar-tab:hover {
+            background: rgba(236, 136, 64, 0.15);
+            color: #EC8840;
+        }
 
-    .feature-card {
-      background: white;
-      border-radius: 20px;
-      padding: 30px;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.49);
-    }
+        .sidebar-tab.active {
+            background: rgba(236, 136, 64, 0.2);
+            color: #EC8840;
+        }
 
-    .feature-card:hover {
-      transform: translateY(-10px);
-      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
-    }
+        .sidebar-tab i {
+            font-size: 1rem;
+            min-width: 18px;
+            text-align: center;
+        }
 
-    .upload-container {
-      border: 2px dashed var(--primary);
-      border-radius: 20px;
-      background: rgba(0, 144, 171, 0.05);
-      transition: all 0.3s ease;
-    }
+        /* Submenu functionality */
+        .sidebar-tab.has-submenu {
+            position: relative;
+        }
 
-    .upload-container.dragover {
-      border-color: var(--secondary);
-      background: rgba(221, 26, 91, 0.05);
-    }
+        .sidebar-tab.has-submenu::after {
+            content: '\f107';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            right: 0.8rem;
+            transition: transform 0.2s ease;
+        }
 
-    .result-card {
-      background: var(--gradient-1);
-      color: white;
-      border-radius: 20px;
-      overflow: hidden;
-      position: relative;
-    }
+        .sidebar-tab.has-submenu.expanded::after {
+            transform: rotate(180deg);
+        }
 
-    .result-card::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: linear-gradient(
-        45deg,
-        transparent 25%,
-        rgba(255, 255, 255, 0.49) 50%,
-        transparent 75%
-      );
-      animation: shine 4s infinite linear;
-    }
+        .submenu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.2s ease;
+            margin-left: 0.8rem;
+        }
 
-    @keyframes shine {
-      100% { transform: translate(50%, 50%); }
-    }
-    #loading-overlay {
-      background: rgba(255, 255, 255, 0.98);
-      color: var(--primary);
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      display: none;
-      z-index: 3000;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-      text-align: center;
-      padding: 2rem;
-      backdrop-filter: blur(10px);
-    }
-  
-    #loading-overlay .loading-spinner {
-      border: 3px solid rgba(0, 144, 171, 0.2);
-      border-top-color: var(--primary);
-      border-radius: 50%;
-      width: 50px;
-      height: 50px;
-      animation: spin 1s linear infinite;
-      margin-bottom: 1.5rem;
-    }
-  
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-  
-    #loading-messages p {
-      font-size: 1.1rem;
-      margin: 0.5rem 0;
-      color: var(--accent);
-      animation: fadeInUp 0.5s ease;
-    }
-  
-    @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-  </style>
+        .submenu.active {
+            max-height: 150px;
+        }
+
+        .submenu-item {
+            padding: 0.6rem 0.8rem;
+            margin: 0.2rem 0;
+            background: rgba(255,255,255,0.03);
+            border-radius: 4px;
+            font-size: 0.85rem;
+            color: #e0e0e0;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .submenu-item:hover {
+            background: rgba(236, 136, 64, 0.1);
+            color: #EC8840;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            width: 65%;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: stretch;
+            position: relative;
+            min-height: 100vh;
+            flex: 1 1 0%;
+        }
+
+        .page-title {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #441C5B;
+            margin-bottom: 3rem;
+            text-align: center;
+        }
+
+        /* Common Styles */
+        .form-group {
+            margin-bottom: 2rem;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: #441C5B;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-family: inherit;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #441C5B;
+            box-shadow: 0 0 0 3px rgba(68, 28, 91, 0.1);
+        }
+
+        .video-type-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .video-type-btn {
+            flex: 1;
+            padding: 16px 24px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .video-type-btn:hover {
+            border-color: #441C5B;
+            background: rgba(68, 28, 91, 0.05);
+        }
+
+        .video-type-btn.selected {
+            background: #441C5B;
+            color: white;
+            border-color: #441C5B;
+        }
+
+        .upload-btn {
+            width: 100%;
+            padding: 20px 24px;
+            background: #EC8840;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-family: inherit;
+        }
+
+        .upload-btn:hover {
+            background: #d17a35;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(236, 136, 64, 0.3);
+        }
+
+        .content-section {
+            width: 100%;
+            min-height: 400px;
+        }
+
+        .section-content {
+            background: #fff;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 2px 8px rgba(68, 28, 91, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .section-content h2 {
+            color: #441C5B;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .section-content p {
+            color: #666;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        .upload-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 1px 1px 1px 1px;
+            margin-bottom: 2rem;
+        }
+
+        /* Loading Overlay */
+        #loading-overlay {
+            background: rgba(255, 255, 255, 0.98);
+            color: var(--primary);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            z-index: 3000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            text-align: center;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+        }
+
+        #loading-overlay .loading-spinner {
+            border: 3px solid rgba(0, 144, 171, 0.2);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1.5rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        #loading-messages p {
+            font-size: 1.1rem;
+            margin: 0.5rem 0;
+            color: var(--accent);
+            animation: fadeInUp 0.5s ease;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                min-height: 300px;
+            }
+
+            .main-content {
+                width: 100%;
+                padding: 2rem 1rem;
+            }
+
+            .page-title {
+                font-size: 2.2rem;
+            }
+
+            .upload-card {
+                padding: 2rem;
+                width: 100%;
+                max-width: 100%;
+            }
+
+            .video-type-buttons {
+                flex-direction: column;
+            }
+
+            .form-input {
+                padding: 14px 16px;
+                font-size: 1rem;
+            }
+
+            .video-type-btn {
+                padding: 14px 20px;
+                font-size: 1rem;
+            }
+
+            .upload-btn {
+                padding: 16px 20px;
+                font-size: 1.1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .sidebar {
+                padding: 1.5rem;
+            }
+
+            .main-content {
+                padding: 1rem;
+            }
+
+            .page-title {
+                font-size: 1.8rem;
+            }
+
+            .upload-card {
+                padding: 1.5rem;
+            }
+
+            .form-input {
+                padding: 12px 14px;
+                font-size: 0.95rem;
+            }
+
+            .video-type-btn {
+                padding: 12px 16px;
+                font-size: 0.95rem;
+            }
+
+            .upload-btn {
+                padding: 14px 18px;
+                font-size: 1rem;
+            }
+        }
+    </style>
 </head>
 <body>
-  <!-- Navigation -->
-  <nav class="navbar navbar-expand-lg navbar-light fixed-top">
     <div class="container">
-      <a class="navbar-brand d-flex align-items-center" href="{{ url_for('index') }}">
-        <img src="https://www.some.education/assets/img/logo/logo.png" alt="Logo" height="50" class="me-2">
-        <span class="fw-bold" style="letter-spacing: 1px; color: var(--primary-blue);">School of Meaningful Experiences </span>
-      </a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
-        <ul class="navbar-nav">
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('index') }}" style="color: var(--primary-blue);">Home</a>
-          </li>
-        </ul>
-      </div>
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="logo-section">
+                <img src="SoME Logo[1].png" alt="SoME Logo" class="logo">
+            </div>
+            <div class="sidebar-tabs">
+                <button class="sidebar-tab active" data-section="upload">
+                    <i class="fas fa-upload"></i> Upload
+                </button>
+                <button class="sidebar-tab has-submenu" data-section="monitoring">
+                    <i class="fas fa-chart-line"></i> System Monitoring
+                </button>
+                <div class="submenu" id="monitoringSubmenu">
+                    <div class="submenu-item" data-section="performance">
+                        <i class="fas fa-tachometer-alt"></i> Performance
+                    </div>
+                    <div class="submenu-item" data-section="alerts">
+                        <i class="fas fa-bell"></i> Alerts
+                    </div>
+                </div>
+                <button class="sidebar-tab has-submenu" data-section="user-management">
+                    <i class="fas fa-users"></i> User Management
+                </button>
+                <div class="submenu" id="userManagementSubmenu">
+                    <div class="submenu-item" data-section="users">
+                        <i class="fas fa-user"></i> Users
+                    </div>
+                    <div class="submenu-item" data-section="roles">
+                        <i class="fas fa-user-tag"></i> Roles
+                    </div>
+                </div>
+                <button class="sidebar-tab has-submenu" data-section="system-config">
+                    <i class="fas fa-cog"></i> System Configuration
+                </button>
+                <div class="submenu" id="systemConfigSubmenu">
+                    <div class="submenu-item" data-section="Parameters">
+                        <i class="fas fa-sliders-h"></i> parameters
+                    </div>
+                    <div class="submenu-item" data-section="Branding">
+                        <i class="fas fa-palette"></i> Branding
+                    </div>
+                    <div class="submenu-item" data-section="security">
+                        <i class="fas fa-shield-alt"></i> Security
+                    </div>
+                </div>
+                <button class="sidebar-tab" data-section="documentation">
+                    <i class="fas fa-book"></i> Documentation
+                </button>
+                <button class="sidebar-tab" data-section="help">
+                    <i class="fas fa-question-circle"></i> Help
+                </button>
+                <button class="sidebar-tab" data-section="logout">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="main-content" id="mainContent">
+            <h1 class="page-title">SoME AI Video Analysis & Feedback Tool</h1>
+            <div id="dynamicContent">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
     </div>
-  </nav>
 
-  <!-- Hero Section -->
-  <body>
-    <!-- Hero Section -->
-    <section class="hero-section">
-      <div class="floating-blobs">
-        <div class="blob" style="width: 400px; height: 400px; top: -100px; left: -100px; background: rgba(79, 34, 99, 0.15);"></div>
-        <div class="blob" style="width: 300px; height: 300px; bottom: -50px; right: -100px; background: rgba(236, 116, 34, 0.1);"></div>
-      </div>
-      <div class="container text-center hero-content">
-        <h1 class="display-3 fw-bold text-white mb-4 animate__animated animate__fadeInDown">
-          AI-Powered Video Analysis <br>
-          <span class="text-gradient" style="background-image: linear-gradient(120deg, #ec7422 0%,rgb(26, 130, 221) 100%);">
-            System ReImagined
-          </span>
-        </h1>
-        <p class="lead text-white-80 mb-5 fs-4 animate__animated animate__fadeIn">
-        </p>
-        <a href="#uploadSection" class="cta-button btn-lg text-white animate__animated animate__fadeInUp">
-          Get Started Free
-        </a>
-      </div>
-    </section>
-
-  <!-- Loading Overlay -->
-  <div id="loading-overlay">
-    <div class="loading-spinner"></div>
-    <h2 class="mb-3 text-gradient" style=" var(--highlight))">Processing Your Request</h2>
-    <div id="loading-messages" class="mb-3"></div>
-  </div>
-
-  <!-- Main Content -->
-  <main class="container my-5">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-          </div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
-    
-    {% block content %}{% endblock %}
-  </main>
-
-  <!-- Footer -->
-  <footer class="text-center">
-    <div class="container">
-      <p style="color: var(--primary-blue);">&copy; {{ current_year if current_year else "2025" }} SOME ANALYTICS. All rights reserved.</p>
+    <!-- Loading Overlay -->
+    <div id="loading-overlay">
+        <div class="loading-spinner"></div>
+        <h2 class="mb-3 text-gradient" style="color: var(--highlight)">Processing Your Request</h2>
+        <div id="loading-messages" class="mb-3"></div>
     </div>
-  </footer>
 
-  <!-- Bootstrap JS Bundle -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  
-  <!-- JavaScript for Sequential Loading Messages -->
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      const form = document.querySelector('form');
-      if (form) {
-        form.addEventListener('submit', function(e) {
-          document.body.style.overflow = 'hidden';
-          
-          const overlay = document.getElementById('loading-overlay');
-          const messagesContainer = document.getElementById('loading-messages');
-          messagesContainer.innerHTML = "";
-          overlay.style.display = 'flex';
-          
-          const messages = [
-            "Loading, please wait...",
-            "Extracting insights",
-            "Analyzing video",
-            "Analyzing tone",
-            "Generating transcript",
-            "Evaluating resume"
-          ];
-          let delay = 0;
-          messages.forEach(function(message) {
-            setTimeout(function() {
-              const p = document.createElement('p');
-              p.textContent = message;
-              messagesContainer.appendChild(p);
-            }, delay);
-            delay += 1000;
-          });
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Submenu functionality
+        const submenuButtons = document.querySelectorAll('.sidebar-tab.has-submenu');
+        
+        submenuButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const submenu = this.nextElementSibling;
+                submenuButtons.forEach(otherButton => {
+                    if (otherButton !== this) {
+                        otherButton.classList.remove('expanded');
+                        otherButton.nextElementSibling.classList.remove('active');
+                    }
+                });
+                this.classList.toggle('expanded');
+                submenu.classList.toggle('active');
+            });
         });
-      }
-    });
-  </script>
+
+        // Tab switching functionality
+        const sidebarTabs = document.querySelectorAll('.sidebar-tab');
+        const submenuItems = document.querySelectorAll('.submenu-item');
+        
+        function switchTab(tabElement) {
+            sidebarTabs.forEach(tab => tab.classList.remove('active'));
+            submenuItems.forEach(item => item.classList.remove('active'));
+            tabElement.classList.add('active');
+            if (tabElement.classList.contains('submenu-item')) {
+                tabElement.classList.add('active');
+            }
+            const section = tabElement.getAttribute('data-section');
+            updateMainContent(section);
+        }
+        
+        sidebarTabs.forEach(tab => {
+            tab.addEventListener('click', function(e) {
+                if (!this.classList.contains('has-submenu')) {
+                    switchTab(this);
+                }
+            });
+        });
+        
+        submenuItems.forEach(item => {
+            item.addEventListener('click', function() {
+                switchTab(this);
+            });
+        });
+        
+        function updateMainContent(section) {
+            const pageTitle = document.querySelector('.page-title');
+            const dynamicContent = document.getElementById('dynamicContent');
+            const allSections = document.querySelectorAll('.content-section');
+            
+            allSections.forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            const targetSection = document.getElementById(section + 'Section');
+            if (targetSection) {
+                targetSection.style.display = 'block';
+            }
+            
+            const sectionTitles = {
+                'upload': 'Upload Section',
+                'monitoring': 'System Monitoring',
+                'performance': 'Performance Metrics',
+                'logs': 'System Logs',
+                'alerts': 'System Alerts',
+                'user-management': 'User Management',
+                'users': 'Users',
+                'roles': 'Roles',
+                'permissions': 'Permissions',
+                'system-config': 'System Configuration',
+                'settings': 'Settings',
+                'backup': 'Backup',
+                'security': 'Security',
+                'documentation': 'Documentation',
+                'logout': 'Logout'
+            };
+            
+            pageTitle.textContent = sectionTitles[section] || 'Section';
+            console.log('Switched to section:', section);
+        }
+
+        // Initialize with upload section active
+        updateMainContent('upload');
+
+        // Loading overlay messages
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    document.body.style.overflow = 'hidden';
+                    const overlay = document.getElementById('loading-overlay');
+                    const messagesContainer = document.getElementById('loading-messages');
+                    messagesContainer.innerHTML = "";
+                    overlay.style.display = 'flex';
+                    
+                    const messages = [
+                        "Loading, please wait...",
+                        "Extracting insights",
+                        "Analyzing video",
+                        "Analyzing tone",
+                        "Generating transcript",
+                        "Evaluating resume"
+                    ];
+                    let delay = 0;
+                    messages.forEach(function(message) {
+                        setTimeout(function() {
+                            const p = document.createElement('p');
+                            p.textContent = message;
+                            messagesContainer.appendChild(p);
+                        }, delay);
+                        delay += 1000;
+                    });
+                });
+            }
+        });
+    </script>
 </body>
 </html>
