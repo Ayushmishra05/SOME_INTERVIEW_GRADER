@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SoME AI Video Analysis & Feedback Tool</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: helvetica-lt-pro, sans-serif;
+            font-style: normal;
+            font-weight: 400;
+            font-size: large;
+            background-color: #ffffff;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+
+
+        /* Left Sidebar - 35% of screen */
+        .sidebar {
+            width: 30%;
+            background: 
+                linear-gradient(49deg, rgba(168, 85, 247, 0.3) 0%, rgba(124, 58, 237, 0.2) 24%, transparent 50%),
+                #441c5b;
+            color: white;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        
+        .logo-section {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .logo {
+            width: 300px;
+            height: auto;
+            margin-bottom: 0.5rem;
+             /* Makes the logo white */
+        }
+
+        .hero-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .hero-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            line-height: 1.2;
+        }
+
+        .hero-subtitle {
+            font-size: 1rem;
+            opacity: 0.9;
+            line-height: 1.5;
+        }
+
+
+
+        /* Main Content Area */
+        .main-content {
+            width: 65%;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: stretch;
+            position: relative;
+            min-height: 100vh;
+            flex: 1 1 0%;
+        }
+
+        .page-title {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #441C5B;
+            margin-bottom: 3rem;
+            text-align: center;
+        }
+
+        .upload-card {
+            max-width: none;
+            width: 100%;
+            margin: 0;
+            padding: 2.5rem 2rem;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            flex: 1 1 0%;
+        }
+
+        .form-group {
+            margin-bottom: 2rem;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: #441C5B;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-family: inherit;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #441C5B;
+            box-shadow: 0 0 0 3px rgba(68, 28, 91, 0.1);
+        }
+
+        .video-type-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .video-type-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .video-type-btn {
+            flex: 1;
+            padding: 16px 24px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .video-type-btn:hover {
+            border-color: #441C5B;
+            background: rgba(68, 28, 91, 0.05);
+        }
+
+        .video-type-btn.selected {
+            background: #441C5B;
+            color: white;
+            border-color: #441C5B;
+        }
+
+        .input-method-toggle {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 24px;
+            background: #e0e0e0;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .toggle-switch.active {
+            background: #DABBDA;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+        }
+
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(26px);
+        }
+
+        .upload-btn {
+            width: 100%;
+            padding: 20px 24px;
+            background: #EC8840;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-family: inherit;
+        }
+
+        .upload-btn:hover {
+            background: #d17a35;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(236, 136, 64, 0.3);
+        }
+
+        /* Dynamic Content Sections */
+        .content-section {
+            width: 100%;
+            min-height: 400px;
+        }
+
+        .section-content {
+            background: #fff;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 2px 8px rgba(68, 28, 91, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .section-content h2 {
+            color: #441C5B;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .section-content p {
+            color: #666;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        /* Sidebar Tabs - Basic and eased */
+        .sidebar-tabs {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin: 1rem 0;
+            width: 100%;
+        }
+
+        .sidebar-tab {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.8rem 1rem;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #fff;
+            background: rgba(255,255,255,0.05);
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+            text-align: left;
+        }
+
+        .sidebar-tab:hover {
+            background: rgba(236, 136, 64, 0.15);
+            color: #EC8840;
+        }
+
+        .sidebar-tab.active {
+            background: rgba(236, 136, 64, 0.2);
+            color: #EC8840;
+        }
+
+        .sidebar-tab i {
+            font-size: 1rem;
+            min-width: 18px;
+            text-align: center;
+        }
+
+        /* Submenu functionality */
+        .sidebar-tab.has-submenu {
+            position: relative;
+        }
+
+        .sidebar-tab.has-submenu::after {
+            content: '\f107';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            right: 0.8rem;
+            transition: transform 0.2s ease;
+        }
+
+        .sidebar-tab.has-submenu.expanded::after {
+            transform: rotate(180deg);
+        }
+
+        .submenu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.2s ease;
+            margin-left: 0.8rem;
+        }
+
+        .submenu.active {
+            max-height: 150px;
+        }
+
+        .submenu-item {
+            padding: 0.6rem 0.8rem;
+            margin: 0.2rem 0;
+            background: rgba(255,255,255,0.03);
+            border-radius: 4px;
+            font-size: 0.85rem;
+            color: #e0e0e0;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .submenu-item:hover {
+            background: rgba(236, 136, 64, 0.1);
+            color: #EC8840;
+        }
+
+        /* Submissions Table Styles */
+        .submissions-table-wrapper {
+            overflow-x: auto;
+            width: 100%;
+            flex: 1 1 0%;
+            min-height: 0;
+        }
+
+        .submissions-table {
+            width: 100%;
+            min-width: 900px;
+            border-collapse: separate;
+            border-spacing: 0 1rem;
+            font-size: 1.08rem;
+            table-layout: fixed;
+            background: none;
+        }
+
+        .submissions-table th, .submissions-table td {
+            padding: 1.1rem 1.2rem;
+            text-align: left;
+            color: #2a1a3a;
+            background: #f8f6fa;
+            font-weight: 600;
+            height: 60px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            border: none;
+        }
+
+        .submissions-table th {
+            background: #f3f0fa;
+            color: #2a1a3a;
+            font-size: 1.12rem;
+            letter-spacing: 0.02em;
+            font-weight: 700;
+        }
+
+        .submissions-table td {
+            font-weight: 500;
+            background: #fff;
+        }
+
+        .submissions-table tr {
+            border-radius: 12px;
+            box-shadow: 0 2px 8px 0 rgba(68, 28, 91, 0.04);
+        }
+
+        .submissions-table td:nth-child(2) {
+            white-space: normal;
+            word-break: break-all;
+            max-width: 220px;
+        }
+
+        .score-badge {
+            display: inline-block;
+            padding: 0.4em 1.2em;
+            border-radius: 1.2em;
+            color: #fff;
+            font-weight: 700;
+            font-size: 1em;
+            background: #EC8840;
+        }
+        .score-badge.score-orange { background: #EC8840; }
+        .score-badge.score-purple { background: #4B1869; }
+        .score-badge.score-yellow { background: #FFF6D6; color: #4B1869; }
+        .score-badge.score-red { background: #FDE6E0; color: #4B1869; }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4em;
+            font-weight: 600;
+            border-radius: 0.7em;
+            padding: 0.3em 1em;
+            font-size: 1em;
+        }
+        .status-badge.analyzed {
+            background: #e6fbe6;
+            color: #1a7f37;
+        }
+        .status-badge.processing {
+            background: #fffbe6;
+            color: #bfa100;
+        }
+
+        .report-btn {
+            background: #2a1a3a;
+            color: #fff;
+            border: none;
+            border-radius: 1em;
+            padding: 0.7em 1em;
+            font-weight: 700;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background 0.2s;
+            text-decoration: none;
+            display: inline-block;
+            box-shadow: 0 2px 8px 0 rgba(68, 28, 91, 0.10);
+        }
+        .report-btn:hover:not(.disabled) {
+            background: #EC8840;
+            color: #fff;
+        }
+        .report-btn.disabled {
+            background: #d3d3d3;
+            color: #888;
+            cursor: not-allowed;
+        }
+        .upload-card{
+            border: 1px  ;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 1px 1px 1px 1px;
+            margin-bottom: 2rem;
+        }
+
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                min-height: 300px;
+            }
+
+            .main-content {
+                width: 100%;
+                padding: 2rem 1rem;
+            }
+
+            .page-title {
+                font-size: 2.2rem;
+            }
+
+            .upload-card {
+                padding: 2rem;
+                width: 100%;
+                max-width: 100%;
+            }
+
+            .video-type-buttons {
+                flex-direction: column;
+            }
+
+            .form-input {
+                padding: 14px 16px;
+                font-size: 1rem;
+            }
+
+            .video-type-btn {
+                padding: 14px 20px;
+                font-size: 1rem;
+            }
+
+            .upload-btn {
+                padding: 16px 20px;
+                font-size: 1.1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .sidebar {
+                padding: 1.5rem;
+            }
+
+            .main-content {
+                padding: 1rem;
+            }
+
+            .page-title {
+                font-size: 1.8rem;
+            }
+
+            .upload-card {
+                padding: 1.5rem;
+            }
+
+            .form-input {
+                padding: 12px 14px;
+                font-size: 0.95rem;
+            }
+
+            .video-type-btn {
+                padding: 12px 16px;
+                font-size: 0.95rem;
+            }
+
+            .upload-btn {
+                padding: 14px 18px;
+                font-size: 1rem;
+            }
+        }
+
+        @media (max-width: 1100px) {
+            .submissions-table { min-width: 700px; }
+            .submissions-table th, .submissions-table td { padding: 0.8rem 0.7rem; }
+            .main-content {
+                padding: 1rem;
+            }
+            .upload-card {
+                padding: 1.2rem 0.5rem;
+            }
+        }
+        @media (max-width: 900px) {
+            .main-content {
+                padding: 0.5rem;
+            }
+            .upload-card {
+                padding: 0.7rem 0.2rem;
+            }
+            .submissions-table { min-width: 500px; font-size: 0.95rem; }
+            .submissions-table th, .submissions-table td { padding: 0.5rem 0.2rem; height: 48px; }
+            .submissions-table td:nth-child(2) { max-width: 80px; }
+        }
+    </style>
+</head>
+<body>
+
+
+    <div class="container">
+        <!-- Sidebar with Tabs -->
+        <div class="sidebar" id="sidebar">
+            <div class="logo-section">
+                <img src="SoME Logo[1].png" alt="SoME Logo" class="logo">
+            </div>
+            
+            <div class="sidebar-tabs">
+                <button class="sidebar-tab active" data-section="upload">
+                    <i class="fas fa-upload"></i> Upload
+                </button>
+                <button class="sidebar-tab has-submenu" data-section="monitoring">
+                    <i class="fas fa-chart-line"></i> System Monitoring
+                </button>
+                <div class="submenu" id="monitoringSubmenu">
+                    <div class="submenu-item" data-section="performance">
+                        <i class="fas fa-tachometer-alt"></i> Performance
+                    </div>
+                    
+                    <div class="submenu-item" data-section="alerts">
+                        <i class="fas fa-bell"></i> Alerts
+                    </div>
+                </div>
+                
+                <button class="sidebar-tab has-submenu" data-section="user-management">
+                    <i class="fas fa-users"></i> User Management
+                </button>
+                <div class="submenu" id="userManagementSubmenu">
+                    <div class="submenu-item" data-section="users">
+                        <i class="fas fa-user"></i> Users
+                    </div>
+                    <div class="submenu-item" data-section="roles">
+                        <i class="fas fa-user-tag"></i> Roles
+                    </div>
+                    
+                </div>
+                
+                <button class="sidebar-tab has-submenu" data-section="system-config">
+                    <i class="fas fa-cog"></i> System Configuration
+                </button>
+                <div class="submenu" id="systemConfigSubmenu">
+                    <div class="submenu-item" data-section="Parameters">
+                        <i class="fas fa-sliders-h"></i> parameters
+                    </div>
+                    <div class="submenu-item" data-section="Branding">
+                        <i class="fas fa-palette"></i> Branding
+                    </div>
+                    <div class="submenu-item" data-section="security">
+                        <i class="fas fa-shield-alt"></i> Security
+                    </div>
+                </div>
+                
+                <button class="sidebar-tab" data-section="documentation">
+                    <i class="fas fa-book"></i> Documentation
+                </button>
+                <button class="sidebar-tab" data-section="help">
+                    <i class="fas fa-question-circle"></i> Help
+                </button>
+                <button class="sidebar-tab" data-section="logout">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+            
+
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="main-content" id="mainContent">
+            <h1 class="page-title">SoME AI Video Analysis & Feedback Tool</h1>
+            
+            <!-- Dynamic Content Container -->
+            <div id="dynamicContent">
+                <!-- Upload Section -->
+                <div class="content-section" id="uploadSection">
+                    <div class="upload-card">
+                        <div class="form-group">
+                            <label class="form-label">Name</label>
+                            <input type="text" class="form-input" placeholder="Enter Name...">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Video Type</label>
+                            <div class="video-type-buttons">
+                                <button class="video-type-btn selected">Speech/Presentation</button>
+                                <button class="video-type-btn">Video Resume</button>
+                                
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Upload Video</label>
+                            <input type="file" class="form-input" accept="video/*">
+                        </div>
+
+                        <button class="upload-btn">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            Upload Video
+                        </button>
+                    </div>
+                </div>
+
+                <!-- System Monitoring Section -->
+                <div class="content-section" id="monitoringSection" style="display: none;">
+                    <div class="section-content">
+                        <h2>System Monitoring Dashboard</h2>
+                        <p>Monitor system performance and health metrics.</p>
+                    </div>
+                </div>
+
+                <!-- Performance Section -->
+                <div class="content-section" id="performanceSection" style="display: none;">
+                    <div class="section-content">
+                        <h2>Performance Metrics</h2>
+                        <p>View detailed performance analytics and metrics.</p>
+                    </div>
+                </div>
+
+                <!-- System Logs Section -->
+                <div class="content-section" id="logsSection" style="display: none;">
+                    <div class="section-content">
+                        <h2>System Logs</h2>
+                        <p>Access and review system logs and error reports.</p>
+                    </div>
+                </div>
+
+                <!-- Alerts Section -->
+                <div class="content-section" id="alertsSection" style="display: none;">
+                    <div class="section-content">
+                        <h2>System Alerts</h2>
+                        <p>View and manage system alerts and notifications.</p>
+                    </div>
+                </div>
+
+                <!-- User Management Section -->
+                <div class="content-section" id="userManagementSection" style="display: none;">
+                    <div class="section-content">
+                        <h2>User Management</h2>
+                        <p>Manage user accounts and permissions.</p>
+                    </div>
+                </div>
+
+                <!-- Users Section -->
+                <div class="content-section" id="usersSection" style="display: none;">
+                    <div class="section-content">
+                        <h2>Users</h2>
+                        <p>View and manage user accounts.</p>
+                    </div>
+                </div>
+
+                <!-- Roles Section -->
+                <div class="content-section" id="rolesSection" style="display: none;">
+                    <div class="section-content">
+                        <h2>Roles</h2>
+                        <p>Manage user roles and permissions.</p>
+                    </div>
+                </div>
+
+                <!-- Permissions Section -->
+                <div class="content-section" id="permissionsSection" style="display: none;">
+                    <div class="section-content">
+                        <h2>Permissions</h2>
+                        <p>Configure system permissions and access controls.</p>
+                    </div>
+                </div>
+
+                <!-- System Configuration Section -->
+                <div class="content-section" id="systemConfigSection" style="display: none;">
+                    <div class="section-content">
+                        <h2>System Configuration</h2>
+                        <p>Configure system settings and parameters.</p>
+                    </div>
+                </div>
+
+                <!-- Settings Section -->
+                <div class="content-section" id="settingsSection" style="display: none;">
+                    <div class="section-content">
+                        <h2>Settings</h2>
+                        <p>Adjust application settings and preferences.</p>
+                    </div>
+                </div>
+
+                <!-- Backup Section -->
+                <div class="content-section" id="backupSection" style="display: none;">
+                    <div class="section-content">
+                        <h2>Backup</h2>
+                        <p>Manage system backups and recovery options.</p>
+                    </div>
+                </div>
+
+                <!-- Security Section -->
+                <div class="content-section" id="securitySection" style="display: none;">
+                    <div class="section-content">
+                        <h2>Security</h2>
+                        <p>Configure security settings and access controls.</p>
+                    </div>
+                </div>
+
+                <!-- Documentation Section -->
+                <div class="content-section" id="documentationSection" style="display: none;">
+                    <div class="section-content">
+                        <h2>Documentation</h2>
+                        <p>Access system documentation and help resources.</p>
+                    </div>
+                </div>
+
+                <!-- Logout Section -->
+                <div class="content-section" id="logoutSection" style="display: none;">
+                    <div class="section-content">
+                        <h2>Logout</h2>
+                        <p>Sign out of the system.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Submenu functionality
+        const submenuButtons = document.querySelectorAll('.sidebar-tab.has-submenu');
+        
+        submenuButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const submenu = this.nextElementSibling;
+                
+                // Close all other submenus
+                submenuButtons.forEach(otherButton => {
+                    if (otherButton !== this) {
+                        otherButton.classList.remove('expanded');
+                        otherButton.nextElementSibling.classList.remove('active');
+                    }
+                });
+                
+                // Toggle current submenu
+                this.classList.toggle('expanded');
+                submenu.classList.toggle('active');
+            });
+        });
+
+        // Tab switching functionality
+        const sidebarTabs = document.querySelectorAll('.sidebar-tab');
+        const submenuItems = document.querySelectorAll('.submenu-item');
+        
+        function switchTab(tabElement) {
+            // Remove active class from all tabs
+            sidebarTabs.forEach(tab => tab.classList.remove('active'));
+            submenuItems.forEach(item => item.classList.remove('active'));
+            
+            // Add active class to clicked tab
+            tabElement.classList.add('active');
+            
+            // Handle submenu items
+            if (tabElement.classList.contains('submenu-item')) {
+                tabElement.classList.add('active');
+            }
+            
+            // Update main content based on section
+            const section = tabElement.getAttribute('data-section');
+            updateMainContent(section);
+        }
+        
+        sidebarTabs.forEach(tab => {
+            tab.addEventListener('click', function(e) {
+                if (!this.classList.contains('has-submenu')) {
+                    switchTab(this);
+                }
+            });
+        });
+        
+        submenuItems.forEach(item => {
+            item.addEventListener('click', function() {
+                switchTab(this);
+            });
+        });
+        
+        function updateMainContent(section) {
+            const pageTitle = document.querySelector('.page-title');
+            const dynamicContent = document.getElementById('dynamicContent');
+            const allSections = document.querySelectorAll('.content-section');
+            
+            // Hide all sections first
+            allSections.forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // Show the selected section
+            const targetSection = document.getElementById(section + 'Section');
+            if (targetSection) {
+                targetSection.style.display = 'block';
+            }
+            
+            // Update page title based on section
+            const sectionTitles = {
+                'upload': 'Upload Section',
+                'monitoring': 'System Monitoring',
+                'performance': 'Performance Metrics',
+                'logs': 'System Logs',
+                'alerts': 'System Alerts',
+                'user-management': 'User Management',
+                'users': 'Users',
+                'roles': 'Roles',
+                'permissions': 'Permissions',
+                'system-config': 'System Configuration',
+                'settings': 'Settings',
+                'backup': 'Backup',
+                'security': 'Security',
+                'documentation': 'Documentation',
+                'logout': 'Logout'
+            };
+            
+            pageTitle.textContent = sectionTitles[section] || 'Section';
+            
+            console.log('Switched to section:', section);
+        }
+
+        // Video type button functionality
+        const videoTypeButtons = document.querySelectorAll('.video-type-btn');
+        videoTypeButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                videoTypeButtons.forEach(btn => btn.classList.remove('selected'));
+                this.classList.add('selected');
+            });
+        });
+
+        // Initialize with upload section active
+        updateMainContent('upload');
+    </script>
+</body>
+</html>

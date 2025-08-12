@@ -6,18 +6,21 @@ import logging
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_groq import ChatGroq
+from langchain_openai import ChatOpenAI
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from groq import APIError
+from openai import RateLimitError
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 @retry(
-    stop=stop_after_attempt(3),
-    wait=wait_exponential(multiplier=1, min=4, max=10),
-    retry=retry_if_exception_type((APIError, asyncio.TimeoutError))
+    stop=stop_after_attempt(5),
+    wait=wait_exponential(multiplier=2, min=4, max=60),
+    retry=retry_if_exception_type((RateLimitError, APIError, asyncio.TimeoutError))
 )
+
 async def score_analyser(
     transcription_output,  # Ignored (eval_results from Overall_Analyser)
     transcription_json_path,
@@ -26,18 +29,17 @@ async def score_analyser(
     audio_metrics_json_path,
     prompt_yaml_path="prompts/score_analyser.yaml"
 ):
-    api_key = os.getenv("GROQ_API_KEY")
+    api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         logger.error("GROQ_API_KEY environment variable not set")
         raise ValueError("GROQ_API_KEY not set")
     
-    model = ChatGroq(
-        model="llama-3.3-70b-versatile",
-        api_key=api_key
+    model = ChatOpenAI(
+        model="o1",
+        api_key="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"
     )
     output_parser = JsonOutputParser()
     
-    # Read all files
     try:
         with open(transcription_json_path, 'r', encoding='utf-8') as file:
             transcription_data = json.load(file)
@@ -160,6 +162,7 @@ async def score_analyser(
             'audio_metrics': audio_metrics,
             'video_metrics': video_metrics
         })
+        await asyncio.sleep(6)
         logger.info(f"Scoring result: {output}")
         return output
     except APIError as e:

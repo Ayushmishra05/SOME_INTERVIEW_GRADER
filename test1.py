@@ -1,7 +1,9 @@
-import json
-with open(r'D:\SOME CLOUD\SOME-Grading-Automation\json\transcription_video_Ayush _17062b4d.json' , 'r') as f:
-    transcription_dict = json.load(f)
+import openai
 
-text = transcription_dict[0].get("text", "").strip()
+api_key = "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"
 
-print(text)
+from langchain_openai import ChatOpenAI 
+
+model = ChatOpenAI(model = 'gpt-3.5-turbo' , api_key = api_key) 
+
+print(model.invoke("Hello Babes"))

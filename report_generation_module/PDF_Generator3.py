@@ -98,10 +98,36 @@ def create_combined_pdf(logo_path, json_path, scores_json_path, quality_json_pat
     flowables.append(title)
     flowables.append(Spacer(1, 24))
     iq_style = ParagraphStyle('IQStyle', parent=styles['BodyText'], fontName='Helvetica-Bold', fontSize=14, spaceAfter=12)
-    flowables.append(
-        Paragraph(f"<b>Influence Quotient: {round((score / (65 if presentation_mode == 'on' else 50)) * 100)}/100</b>", iq_style)
-    )
-    flowables.append(Spacer(1, 16))
+    if presentation_mode == "on":
+        iq_style = ParagraphStyle(
+            'IQStyle',
+            parent=styles['BodyText'],
+            fontName='Helvetica-Bold',
+            fontSize=14,      # slightly larger
+            spaceAfter=12
+        )
+        print("Printing Scores , " , score)
+
+
+        flowables.append(
+            Paragraph(f"<b>Influence Quotient: {(round(score/65 * 100))}/100</b>", iq_style)
+        )
+        flowables.append(Spacer(1, 16))
+    else:
+        print("Printing Scores , " , score)
+        iq_style = ParagraphStyle(
+            'IQStyle',
+            parent=styles['BodyText'],
+            fontName='Helvetica-Bold',
+            fontSize=14,      # slightly larger
+            spaceAfter=12
+        )
+
+
+        flowables.append(
+            Paragraph(f"<b>Influence Quotient: {round((score / 50 * 100))}/100</b>", iq_style)
+        )
+        flowables.append(Spacer(1, 16))
     chart_path = f"output_{os.path.basename(json_path).split('.')[0]}.png"
     try:
         generate_radar_chart(presentation_json_path , graph_path , scores_json_path , chart_path)

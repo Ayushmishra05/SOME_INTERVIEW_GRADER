@@ -6,8 +6,10 @@ import logging
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_groq import ChatGroq
+from langchain_openai import ChatOpenAI
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from groq import APIError
+from openai import RateLimitError
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -17,12 +19,12 @@ class VideoResumeEvaluator:
     def __init__(self, model_name="llama-3.3-70b-versatile", presentation_json_path="json/presentation.json",
                  output_json_path="json/output.json", audio_metrics_json_path="json/audio_metrics.json",
                  prompt_yaml_path="prompts/overall_prompt.yaml"):
-        self.api_key = os.getenv("GROQ_API_KEY")
+        self.api_key = os.getenv("OPENAI_API_KEY")
         if not self.api_key:
             raise ValueError("GROQ_API_KEY environment variable not set")
-        self.llm = ChatGroq(
-            model=model_name,
-            api_key=self.api_key
+        self.llm = ChatOpenAI(
+            model="gpt-4",
+            api_key="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"
         )
         self.output_parser = StrOutputParser()
         self.presentation_json_path = presentation_json_path
@@ -142,10 +144,11 @@ class VideoResumeEvaluator:
         self.chain = self.prompt_template | self.llm | self.output_parser
 
     @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=4, max=10),
-        retry=retry_if_exception_type((APIError, asyncio.TimeoutError))
+        stop=stop_after_attempt(5),
+        wait=wait_exponential(multiplier=2, min=4, max=60),
+        retry=retry_if_exception_type((RateLimitError, APIError, asyncio.TimeoutError))
     )
+
     async def evaluate_transcription(self, transcription_output_path): 
         with open(transcription_output_path , 'r') as f:
             transcription = json.dumps((json.load(f)))
@@ -155,6 +158,7 @@ class VideoResumeEvaluator:
                 'audio_metrics': self.audio_metrics,
                 'video_metrics': self.video_metrics
             })
+            await asyncio.sleep(6)
             logger.info(f"Evaluation result from {self.output_json_path}: {output[:100]}...")
             return output
         except APIError as e:

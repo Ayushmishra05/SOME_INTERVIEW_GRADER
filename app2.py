@@ -45,7 +45,7 @@ async def process_video(user_name: str, video_path: str, presentation_mode: str,
 
         await asyncio.to_thread(json.dump, {"presentation_mode": presentation_mode}, open(presentation_json_path, "w"), indent=4)
         logger.info(f"Saved presentation JSON to {presentation_json_path}")
-
+        print("Presentation Mode : " , presentation_mode)
         with open(video_path, 'rb') as f:
             transcriber = VideoTranscriber(f, audio_path, transcription_json_path)
             transcription_output = await transcriber.transcribe()
