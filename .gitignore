@@ -1,5 +1,5 @@
 .env
 terraform-files/.terraform
 venv
-./json
-.static/uploads/
+json
+static/uploads/
