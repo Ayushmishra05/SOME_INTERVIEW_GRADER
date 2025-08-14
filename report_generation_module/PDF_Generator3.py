@@ -20,6 +20,7 @@ def create_combined_pdf(logo_path, json_path, scores_json_path, quality_json_pat
     with open(presentation_json_path, "r") as file:
         data = json.load(file)
     presentation_mode = data.get("presentation_mode", False)
+    logo_path = r'D:\SOME CLOUD\SOME-Grading-Automation\static\SoME Logo.png'
     with open(json_path, 'r') as fp:
         tabular_data = json.load(fp)
     with open(scores_json_path, 'r') as fp:
@@ -74,9 +75,9 @@ def create_combined_pdf(logo_path, json_path, scores_json_path, quality_json_pat
         canvas.saveState()
         logo = Image(logo_path, width=2*inch, height=1*inch)
         logo.drawOn(canvas, (letter[0]-2*inch)/2, letter[1]-1.2*inch)
-        website_text = "https://some.education.in"
+        website_text = "https://some.education"
         canvas.setFont("Arial", 9)
-        canvas.linkURL("https://some.education.in", (0.5*inch, 0.3*inch, 2.5*inch, 0.5*inch), relative=1)
+        canvas.linkURL("https://some.education", (0.5*inch, 0.3*inch, 2.5*inch, 0.5*inch), relative=1)
         canvas.drawString(0.5*inch, 0.3*inch, website_text)
         page_num = canvas.getPageNumber()
         canvas.drawRightString(letter[0]-0.5*inch, 0.3*inch, f"Page {page_num}")

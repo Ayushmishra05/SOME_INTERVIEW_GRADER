@@ -1,622 +1,280 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SoME AI Video Analysis & Feedback Tool</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: helvetica-lt-pro, sans-serif;
-            font-style: normal;
-            font-weight: 400;
-            font-size: large;
-            background-color: #f8f9fa;
-            color: #333;
-            line-height: 1.6;
-            overflow-x: hidden;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Video Analysis & Report Generator</title>
+  
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome for sidebar icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  
+  <!-- Animate.css -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+  
+  <style>
+    :root {
+      --primary: #0090ab;
+      --secondary: #dd1a5b;
+      --accent: #4f2263;
+      --highlight: #ec7422;
+      --primary-blue: #0090ab;
+      --gradient-1: linear-gradient(135deg, #0090ab 0%, #4f2263 100%);
+      --gradient-2: linear-gradient(45deg, #dd1a5b 0%, #ec7422 100%);
+    }
+    
+    body {
+      background: #f8f9fa;
+      color: #4a4a4a;
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .dashboard-layout {
+      display: flex;
+      min-height: 100vh;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    }
 
-        :root {
-            --primary: #0090ab;
-            --secondary: #dd1a5b;
-            --accent: #4f2263;
-            --highlight: #ec7422;
-            --gradient-1: linear-gradient(135deg, #0090ab 0%, #4f2263 100%);
-            --gradient-2: linear-gradient(45deg, #dd1a5b 0%, #ec7422 100%);
-        }
+    .dashboard-sidebar {
+      width: 35%;
+      background: linear-gradient(49deg, rgba(168, 85, 247, 0.3) 0%, rgba(124, 58, 237, 0.2) 24%, transparent 50%), #441c5b;
+      color: #fff;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      margin: 0;
+    }
 
-        .container {
-            display: flex;
-            min-height: 100vh;
-        }
+    .dashboard-sidebar .logo-section {
+      text-align: center;
+    }
 
-        /* Left Sidebar */
-        .sidebar {
-            width: 30%;
-            background: 
-                linear-gradient(49deg, rgba(168, 85, 247, 0.3) 0%, rgba(124, 58, 237, 0.2) 24%, transparent 50%),
-                #441c5b;
-            color: white;
-            padding: 2rem;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-            height: 100vh;
-            overflow-y: auto;
-        }
-        
-        .logo-section {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
+    .dashboard-sidebar .logo {
+      width: 100%;
+      max-width: 300px;
+      height: auto;
+      margin-bottom: 0.5rem;
+    }
 
-        .logo {
-            width: 300px;
-            height: auto;
-            margin-bottom: 0.5rem;
-        }
+    .dashboard-sidebar-tabs {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin: 2rem 0;
+    }
 
-        /* Sidebar Tabs */
-        .sidebar-tabs {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            margin: 1rem 0;
-            width: 100%;
-        }
+    .dashboard-sidebar-tab {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1.2rem 1.5rem;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #fff;
+      background: rgba(255,255,255,0.08);
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+      box-shadow: none;
+      outline: none;
+      text-align: left;
+    }
 
-        .sidebar-tab {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.8rem 1rem;
-            font-size: 0.95rem;
-            font-weight: 500;
-            color: #fff;
-            background: rgba(255,255,255,0.05);
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            width: 100%;
-            text-align: left;
-        }
+    .dashboard-sidebar-tab:hover,
+    .dashboard-sidebar-tab:focus {
+      background: rgba(236, 136, 64, 0.18);
+      color: #EC8840;
+    }
 
-        .sidebar-tab:hover {
-            background: rgba(236, 136, 64, 0.15);
-            color: #EC8840;
-        }
+    .dashboard-sidebar-tab.active {
+      background: rgba(236, 136, 64, 0.25);
+      color: #EC8840;
+      box-shadow: 0 2px 8px 0 rgba(236, 136, 64, 0.10);
+    }
 
-        .sidebar-tab.active {
-            background: rgba(236, 136, 64, 0.2);
-            color: #EC8840;
-        }
+    .dashboard-tips-section {
+      background: linear-gradient(135deg, #2a1a3a 0%, #1a1a2e 100%);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-top: 1rem;
+    }
 
-        .sidebar-tab i {
-            font-size: 1rem;
-            min-width: 18px;
-            text-align: center;
-        }
+    .dashboard-tips-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: #EC8840;
+    }
 
-        /* Submenu functionality */
-        .sidebar-tab.has-submenu {
-            position: relative;
-        }
+    .dashboard-tips-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
 
-        .sidebar-tab.has-submenu::after {
-            content: '\f107';
-            font-family: 'Font Awesome 6 Free';
-            font-weight: 900;
-            position: absolute;
-            right: 0.8rem;
-            transition: transform 0.2s ease;
-        }
+    .dashboard-tips-list li {
+      margin-bottom: 0.8rem;
+      padding-left: 1.2rem;
+      position: relative;
+      font-size: 0.9rem;
+      color: #e0e0e0;
+    }
 
-        .sidebar-tab.has-submenu.expanded::after {
-            transform: rotate(180deg);
-        }
+    .dashboard-tips-list li::before {
+      content: "•";
+      color: #00ACC4;
+      font-weight: bold;
+      position: absolute;
+      left: 0;
+      font-size: 1.1rem;
+    }
 
-        .submenu {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.2s ease;
-            margin-left: 0.8rem;
-        }
+    .dashboard-main {
+      width: 65%;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      min-height: 100vh;
+      flex: 1 1 0%;
+      background: #ffffff;
+      margin: 0;
+    }
 
-        .submenu.active {
-            max-height: 150px;
-        }
+    .page-title {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: #441C5B;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
 
-        .submenu-item {
-            padding: 0.6rem 0.8rem;
-            margin: 0.2rem 0;
-            background: rgba(255,255,255,0.03);
-            border-radius: 4px;
-            font-size: 0.85rem;
-            color: #e0e0e0;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
+    .loading-overlay {
+      background: rgba(255, 255, 255, 0.98);
+      color: var(--primary);
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: none;
+      z-index: 3000;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      text-align: center;
+      padding: 2rem;
+      backdrop-filter: blur(10px);
+    }
 
-        .submenu-item:hover {
-            background: rgba(236, 136, 64, 0.1);
-            color: #EC8840;
-        }
+    .loading-spinner {
+      border: 3px solid rgba(0, 144, 171, 0.2);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 1.5rem;
+    }
 
-        /* Main Content Area */
-        .main-content {
-            width: 65%;
-            padding: 2rem;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-            align-items: stretch;
-            position: relative;
-            min-height: 100vh;
-            flex: 1 1 0%;
-        }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
 
-        .page-title {
-            font-size: 3rem;
-            font-weight: 700;
-            color: #441C5B;
-            margin-bottom: 3rem;
-            text-align: center;
-        }
+    .loading-messages p {
+      font-size: 1.1rem;
+      margin: 0.5rem 0;
+      color: var(--accent);
+      animation: fadeInUp 0.5s ease;
+    }
 
-        /* Common Styles */
-        .form-group {
-            margin-bottom: 2rem;
-        }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
-        .form-label {
-            display: block;
-            font-weight: 600;
-            color: #441C5B;
-            margin-bottom: 0.5rem;
-            font-size: 1rem;
-        }
+    @media (max-width: 768px) {
+      .dashboard-layout { flex-direction: column; }
+      .dashboard-sidebar { width: 100%; min-height: auto; }
+      .dashboard-main { width: 100%; padding: 0; }
+      .page-title { font-size: 2rem; margin-bottom: 1.5rem; }
+    }
 
-        .form-input {
-            width: 100%;
-            padding: 16px 20px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 1.1rem;
-            font-family: inherit;
-            transition: border-color 0.3s ease;
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: #441C5B;
-            box-shadow: 0 0 0 3px rgba(68, 28, 91, 0.1);
-        }
-
-        .video-type-buttons {
-            display: flex;
-            gap: 1rem;
-            margin-top: 0.5rem;
-        }
-
-        .video-type-btn {
-            flex: 1;
-            padding: 16px 24px;
-            border: 2px solid #e0e0e0;
-            background: white;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 500;
-            font-size: 1.1rem;
-            transition: all 0.3s ease;
-            font-family: inherit;
-        }
-
-        .video-type-btn:hover {
-            border-color: #441C5B;
-            background: rgba(68, 28, 91, 0.05);
-        }
-
-        .video-type-btn.selected {
-            background: #441C5B;
-            color: white;
-            border-color: #441C5B;
-        }
-
-        .upload-btn {
-            width: 100%;
-            padding: 20px 24px;
-            background: #EC8840;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1.2rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            font-family: inherit;
-        }
-
-        .upload-btn:hover {
-            background: #d17a35;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(236, 136, 64, 0.3);
-        }
-
-        .content-section {
-            width: 100%;
-            min-height: 400px;
-        }
-
-        .section-content {
-            background: #fff;
-            border-radius: 12px;
-            padding: 2rem;
-            box-shadow: 0 2px 8px rgba(68, 28, 91, 0.1);
-            margin-bottom: 2rem;
-        }
-
-        .section-content h2 {
-            color: #441C5B;
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-        }
-
-        .section-content p {
-            color: #666;
-            font-size: 1.1rem;
-            line-height: 1.6;
-        }
-
-        .upload-card {
-            border: 1px solid #e0e0e0;
-            border-radius: 12px;
-            padding: 2rem;
-            box-shadow: 1px 1px 1px 1px;
-            margin-bottom: 2rem;
-        }
-
-        /* Loading Overlay */
-        #loading-overlay {
-            background: rgba(255, 255, 255, 0.98);
-            color: var(--primary);
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: none;
-            z-index: 3000;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            text-align: center;
-            padding: 2rem;
-            backdrop-filter: blur(10px);
-        }
-
-        #loading-overlay .loading-spinner {
-            border: 3px solid rgba(0, 144, 171, 0.2);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-            margin-bottom: 1.5rem;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        #loading-messages p {
-            font-size: 1.1rem;
-            margin: 0.5rem 0;
-            color: var(--accent);
-            animation: fadeInUp 0.5s ease;
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .container {
-                flex-direction: column;
-            }
-
-            .sidebar {
-                width: 100%;
-                min-height: 300px;
-            }
-
-            .main-content {
-                width: 100%;
-                padding: 2rem 1rem;
-            }
-
-            .page-title {
-                font-size: 2.2rem;
-            }
-
-            .upload-card {
-                padding: 2rem;
-                width: 100%;
-                max-width: 100%;
-            }
-
-            .video-type-buttons {
-                flex-direction: column;
-            }
-
-            .form-input {
-                padding: 14px 16px;
-                font-size: 1rem;
-            }
-
-            .video-type-btn {
-                padding: 14px 20px;
-                font-size: 1rem;
-            }
-
-            .upload-btn {
-                padding: 16px 20px;
-                font-size: 1.1rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .sidebar {
-                padding: 1.5rem;
-            }
-
-            .main-content {
-                padding: 1rem;
-            }
-
-            .page-title {
-                font-size: 1.8rem;
-            }
-
-            .upload-card {
-                padding: 1.5rem;
-            }
-
-            .form-input {
-                padding: 12px 14px;
-                font-size: 0.95rem;
-            }
-
-            .video-type-btn {
-                padding: 12px 16px;
-                font-size: 0.95rem;
-            }
-
-            .upload-btn {
-                padding: 14px 18px;
-                font-size: 1rem;
-            }
-        }
-    </style>
+    @media (max-width: 480px) {
+      .dashboard-sidebar { padding: 0.5rem; }
+      .page-title { font-size: 1.8rem; }
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Sidebar -->
-        <div class="sidebar" id="sidebar">
-            <div class="logo-section">
-                <img src="SoME Logo[1].png" alt="SoME Logo" class="logo">
-            </div>
-            <div class="sidebar-tabs">
-                <button class="sidebar-tab active" data-section="upload">
-                    <i class="fas fa-upload"></i> Upload
-                </button>
-                <button class="sidebar-tab has-submenu" data-section="monitoring">
-                    <i class="fas fa-chart-line"></i> System Monitoring
-                </button>
-                <div class="submenu" id="monitoringSubmenu">
-                    <div class="submenu-item" data-section="performance">
-                        <i class="fas fa-tachometer-alt"></i> Performance
-                    </div>
-                    <div class="submenu-item" data-section="alerts">
-                        <i class="fas fa-bell"></i> Alerts
-                    </div>
-                </div>
-                <button class="sidebar-tab has-submenu" data-section="user-management">
-                    <i class="fas fa-users"></i> User Management
-                </button>
-                <div class="submenu" id="userManagementSubmenu">
-                    <div class="submenu-item" data-section="users">
-                        <i class="fas fa-user"></i> Users
-                    </div>
-                    <div class="submenu-item" data-section="roles">
-                        <i class="fas fa-user-tag"></i> Roles
-                    </div>
-                </div>
-                <button class="sidebar-tab has-submenu" data-section="system-config">
-                    <i class="fas fa-cog"></i> System Configuration
-                </button>
-                <div class="submenu" id="systemConfigSubmenu">
-                    <div class="submenu-item" data-section="Parameters">
-                        <i class="fas fa-sliders-h"></i> parameters
-                    </div>
-                    <div class="submenu-item" data-section="Branding">
-                        <i class="fas fa-palette"></i> Branding
-                    </div>
-                    <div class="submenu-item" data-section="security">
-                        <i class="fas fa-shield-alt"></i> Security
-                    </div>
-                </div>
-                <button class="sidebar-tab" data-section="documentation">
-                    <i class="fas fa-book"></i> Documentation
-                </button>
-                <button class="sidebar-tab" data-section="help">
-                    <i class="fas fa-question-circle"></i> Help
-                </button>
-                <button class="sidebar-tab" data-section="logout">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </button>
-            </div>
-        </div>
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loading-overlay">
+    <div class="loading-spinner"></div>
+    <h2 class="mb-3 text-gradient" style="color: var(--highlight);">Processing Your Request</h2>
+    <div class="loading-messages" id="loading-messages"></div>
+  </div>
 
-        <!-- Main Content Area -->
-        <div class="main-content" id="mainContent">
-            <h1 class="page-title">SoME AI Video Analysis & Feedback Tool</h1>
-            <div id="dynamicContent">
-                {% block content %}{% endblock %}
+  <!-- Dashboard Layout: Sidebar + Main Content Block -->
+  <div class="dashboard-layout">
+    <aside class="dashboard-sidebar">
+      <div class="logo-section">
+        <img src="{{ url_for('static', filename='SoME Logo.png') }}" alt="SoME Logo" class="logo">
+      </div>
+      <div class="dashboard-sidebar-tabs">
+        <button class="dashboard-sidebar-tab active" type="button" data-section="upload"><i class="fas fa-upload"></i> Upload</button>
+        <button class="dashboard-sidebar-tab" type="button" data-section="submissions"><i class="fas fa-history"></i> My Submissions</button>
+        <button class="dashboard-sidebar-tab" type="button" data-section="analytics"><i class="fas fa-chart-line"></i> Analytics</button>
+        <button class="dashboard-sidebar-tab" type="button" data-section="profile"><i class="fas fa-user"></i> Profile</button>
+        <button class="dashboard-sidebar-tab" type="button" data-section="logout"><i class="fas fa-sign-out-alt"></i> Logout</button>
+      </div>
+      <div class="dashboard-tips-section">
+        <h3 class="dashboard-tips-title">Tips for Best Results</h3>
+        <ul class="dashboard-tips-list">
+          <li>Ensure good lighting & clear audio</li>
+          <li>Speak clearly at a moderate pace</li>
+          <li>Keep video between 2-5 minutes</li>
+          <li>Face the camera directly</li>
+          <li>Use professional attire</li>
+        </ul>
+      </div>
+    </aside>
+
+    <main class="dashboard-main">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
-        </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer class="text-center py-3">
+    <div class="container-fluid">
+      <p style="color: var(--primary-blue);">&copy; {{ current_year if current_year else "2025" }} SOME ANALYTICS. All rights reserved.</p>
     </div>
+  </footer>
 
-    <!-- Loading Overlay -->
-    <div id="loading-overlay">
-        <div class="loading-spinner"></div>
-        <h2 class="mb-3 text-gradient" style="color: var(--highlight)">Processing Your Request</h2>
-        <div id="loading-messages" class="mb-3"></div>
-    </div>
-
-    <!-- Bootstrap JS Bundle -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Submenu functionality
-        const submenuButtons = document.querySelectorAll('.sidebar-tab.has-submenu');
-        
-        submenuButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const submenu = this.nextElementSibling;
-                submenuButtons.forEach(otherButton => {
-                    if (otherButton !== this) {
-                        otherButton.classList.remove('expanded');
-                        otherButton.nextElementSibling.classList.remove('active');
-                    }
-                });
-                this.classList.toggle('expanded');
-                submenu.classList.toggle('active');
-            });
-        });
-
-        // Tab switching functionality
-        const sidebarTabs = document.querySelectorAll('.sidebar-tab');
-        const submenuItems = document.querySelectorAll('.submenu-item');
-        
-        function switchTab(tabElement) {
-            sidebarTabs.forEach(tab => tab.classList.remove('active'));
-            submenuItems.forEach(item => item.classList.remove('active'));
-            tabElement.classList.add('active');
-            if (tabElement.classList.contains('submenu-item')) {
-                tabElement.classList.add('active');
-            }
-            const section = tabElement.getAttribute('data-section');
-            updateMainContent(section);
-        }
-        
-        sidebarTabs.forEach(tab => {
-            tab.addEventListener('click', function(e) {
-                if (!this.classList.contains('has-submenu')) {
-                    switchTab(this);
-                }
-            });
-        });
-        
-        submenuItems.forEach(item => {
-            item.addEventListener('click', function() {
-                switchTab(this);
-            });
-        });
-        
-        function updateMainContent(section) {
-            const pageTitle = document.querySelector('.page-title');
-            const dynamicContent = document.getElementById('dynamicContent');
-            const allSections = document.querySelectorAll('.content-section');
-            
-            allSections.forEach(section => {
-                section.style.display = 'none';
-            });
-            
-            const targetSection = document.getElementById(section + 'Section');
-            if (targetSection) {
-                targetSection.style.display = 'block';
-            }
-            
-            const sectionTitles = {
-                'upload': 'Upload Section',
-                'monitoring': 'System Monitoring',
-                'performance': 'Performance Metrics',
-                'logs': 'System Logs',
-                'alerts': 'System Alerts',
-                'user-management': 'User Management',
-                'users': 'Users',
-                'roles': 'Roles',
-                'permissions': 'Permissions',
-                'system-config': 'System Configuration',
-                'settings': 'Settings',
-                'backup': 'Backup',
-                'security': 'Security',
-                'documentation': 'Documentation',
-                'logout': 'Logout'
-            };
-            
-            pageTitle.textContent = sectionTitles[section] || 'Section';
-            console.log('Switched to section:', section);
-        }
-
-        // Initialize with upload section active
-        updateMainContent('upload');
-
-        // Loading overlay messages
-        document.addEventListener('DOMContentLoaded', function() {
-            const form = document.querySelector('form');
-            if (form) {
-                form.addEventListener('submit', function(e) {
-                    document.body.style.overflow = 'hidden';
-                    const overlay = document.getElementById('loading-overlay');
-                    const messagesContainer = document.getElementById('loading-messages');
-                    messagesContainer.innerHTML = "";
-                    overlay.style.display = 'flex';
-                    
-                    const messages = [
-                        "Loading, please wait...",
-                        "Extracting insights",
-                        "Analyzing video",
-                        "Analyzing tone",
-                        "Generating transcript",
-                        "Evaluating resume"
-                    ];
-                    let delay = 0;
-                    messages.forEach(function(message) {
-                        setTimeout(function() {
-                            const p = document.createElement('p');
-                            p.textContent = message;
-                            messagesContainer.appendChild(p);
-                        }, delay);
-                        delay += 1000;
-                    });
-                });
-            }
-        });
-    </script>
+  <!-- Bootstrap JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

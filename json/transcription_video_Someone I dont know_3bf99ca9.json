@@ -1,0 +1,82 @@
+[
+    {
+        "start": 0,
+        "end": 6,
+        "text": " Hi, my name is Hardik and my dream company is Google and I am applying for Applied AI Scientist."
+    },
+    {
+        "start": 6,
+        "end": 8,
+        "text": " Describe yourself."
+    },
+    {
+        "start": 8,
+        "end": 12,
+        "text": " Hi, I am Hardik Joshi. I am doing M.Tech in AI from IISC."
+    },
+    {
+        "start": 12,
+        "end": 17,
+        "text": " I am doing my project on LLM for its privacy protection."
+    },
+    {
+        "start": 17,
+        "end": 22,
+        "text": " I have also done project on CNN, PCI shift and its other implementation."
+    },
+    {
+        "start": 22,
+        "end": 28,
+        "text": " My hobbies are reading books. When I am alone in my room, I usually read books."
+    },
+    {
+        "start": 28,
+        "end": 31.7,
+        "text": " I like to drink coffee and I am sports enthusiast."
+    },
+    {
+        "start": 31.7,
+        "end": 33.98,
+        "text": " What is your weakness?"
+    },
+    {
+        "start": 33.98,
+        "end": 35.48,
+        "text": " My weakness is sweets."
+    },
+    {
+        "start": 35.48,
+        "end": 39.18,
+        "text": " I usually like sweets and I can't control myself."
+    },
+    {
+        "start": 39.18,
+        "end": 41.26,
+        "text": " What are your strengths?"
+    },
+    {
+        "start": 41.26,
+        "end": 45.68,
+        "text": " After the release of Gemini, it may have some security fault and as I am currently working"
+    },
+    {
+        "start": 45.68,
+        "end": 49.62,
+        "text": " on large language model and its security, I would be using it."
+    },
+    {
+        "start": 49.62,
+        "end": 51.7,
+        "text": " Do you have a question for us?"
+    },
+    {
+        "start": 51.7,
+        "end": 56.6,
+        "text": " Is Google going to release its MR headset and how it's going to be different from Apple"
+    },
+    {
+        "start": 56.6,
+        "end": 57.64,
+        "text": " Vision Pro?"
+    }
+]
