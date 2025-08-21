@@ -10,6 +10,12 @@ from langchain_openai import ChatOpenAI
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from groq import APIError
 from openai import RateLimitError
+from dotenv import load_dotenv
+load_dotenv()
+
+api_key = os.environ['OPENAI_API_KEY']
+
+print("API_KEY ==> " , api_key)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -24,7 +30,7 @@ class VideoResumeEvaluator:
             raise ValueError("GROQ_API_KEY environment variable not set")
         self.llm = ChatOpenAI(
             model="gpt-4o",
-            api_key="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"
+            api_key=api_key
         )
         self.output_parser = StrOutputParser()
         self.presentation_json_path = presentation_json_path

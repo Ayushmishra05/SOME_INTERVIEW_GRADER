@@ -153,7 +153,7 @@
           </div>
           <div class="form-group">
             <div class="input-method-toggle">
-              <label class="form-label" id="toggleLabel">YouTube / Drive URL</label>
+              <label class="form-label" id="toggleLabel">Drive URL</label>
               <input type="checkbox" id="sourceSwitch" style="display:none;">
               <label for="sourceSwitch" class="toggle-switch active">
                 <span class="toggle-slider"></span>
@@ -169,7 +169,7 @@
             <label for="video_file" class="form-label">Upload Video</label>
             <input type="file" id="video_file" name="video_file" class="form-input" accept="video/*">
           </div>
-          <div class="form-group">
+          <!-- <div class="form-group">
             <div class="input-method-toggle">
               <label class="form-label" id="presentationLabel">Standard Mode</label>
               <input type="checkbox" id="presentationSwitch" style="display:none;">
@@ -177,7 +177,7 @@
                 <span class="toggle-slider"></span>
               </label>
             </div>
-          </div>
+          </div> -->
           <button type="submit" class="upload-btn">
             <i class="fas fa-arrow-up"></i>
             Start Analysis
@@ -246,11 +246,18 @@
       // Function to toggle between YouTube/Drive URL and File Upload
       function toggleSource() {
         const isFileSource = sourceSwitch.checked;
+        const toggleSwitch = document.querySelector('.toggle-switch');
         youtubeSection.classList.toggle('d-none', isFileSource);
         fileSection.classList.toggle('d-none', !isFileSource);
         toggleLabel.textContent = isFileSource ? 'File Upload' : 'Drive URL';
         youtubeInput.required = !isFileSource;
         fileInput.required = isFileSource;
+        console.log('Toggle state:', isFileSource, 'Active class:', toggleSwitch.classList.contains('active')); // Debugging
+        if (isFileSource) {
+          toggleSwitch.classList.remove('active');
+        } else {
+          toggleSwitch.classList.add('active');
+        }
       }
 
       // Function to toggle Presentation Mode text
