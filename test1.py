@@ -1,9 +1,25 @@
 import openai
+from dotenv import load_dotenv 
+import os 
 
-api_key = "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"
+load_dotenv
+api_key = os.environ['OPENAI_API_KEY']
 
-from langchain_openai import ChatOpenAI 
+def check_openai_api_key() -> bool:
+    """
+    Checks if the provided OpenAI API key is valid.
+    Returns True if valid, False otherwise.
+    """
+    openai.api_key = api_key
+    try:
+        # Make a simple request to test the key
+        models = openai.models.list()
+        print("✅ API key is valid.")
+        return True
+    except Exception as e:
+        print(f"⚠️ Error occurred: {e}")
+        return False
 
-model = ChatOpenAI(model = 'gpt-3.5-turbo' , api_key = api_key) 
 
-print(model.invoke("Hello Babes"))
+if __name__ == "__main__":
+    check_openai_api_key()

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="content-section" id="resultSection">
+    <div class="section-content">
+        <div class="text-center mb-5">
+            <h2 class="display-4 fw-bold" style="color: var(--primary);">Analysis Completed!</h2>
+            <p class="lead">
+                Thank you, <strong style="color: var(--secondary);">{{ user_name }}</strong>! Your videos have been analyzed.
+            </p>
+        </div>
+        {% for video in videos %}
+        <div class="row mb-5">
+            <div class="col-md-6 mb-4">
+                <div class="card shadow border-0">
+                    <div class="card-body">
+                        <h5 class="card-title" style="color: var(--primary);">Uploaded Video: {{ video.filename | truncate(30, True) }}</h5>
+                        <video width="100%" controls class="rounded" style="border: 2px solid var(--primary);">
+                            <source src="{{ url_for('uploaded_file', filename=video.filename) }}" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4 d-flex align-items-center justify-content-center">
+                <div class="text-center">
+                    <p class="fs-4" style="color: var(--primary);">Ready to review your comprehensive report?</p>
+                    <a href="{{ video.pdf_url }}" class="btn btn-primary btn-lg shadow">
+                        <i class="fas fa-download me-2"></i> Download PDF Report
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

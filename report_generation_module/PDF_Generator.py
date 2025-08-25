@@ -227,4 +227,4 @@ def create_combined_pdf(logo_path, json_path):
     os.remove(save_path)
 
 if __name__ == "__main__":
-    create_combined_pdf(r"logos\logo.png" , r"json\output.json")
+    create_combined_pdf(r"logos\somelogo.jpg" , r"json\output.json")

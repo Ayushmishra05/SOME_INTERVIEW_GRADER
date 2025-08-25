@@ -51,7 +51,7 @@ def main():
     - **About**: Learn more about this tool
     """)
     
-    st.sidebar.image("logos/logo.png", caption="School of Meaningful Experiences")
+    st.sidebar.image("logos/somelogo.jpg", caption="School of Meaningful Experiences")
     
     # Tips section in sidebar
     st.sidebar.markdown("### 💡 Tips for Best Results")

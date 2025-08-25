@@ -20,7 +20,7 @@ def create_combined_pdf(logo_path, json_path, scores_json_path, quality_json_pat
     with open(presentation_json_path, "r") as file:
         data = json.load(file)
     presentation_mode = data.get("presentation_mode", False)
-    logo_path = r'D:\SOME CLOUD\SOME-Grading-Automation\static\SoME Logo.png'
+    logo_path = r'D:\SOME CLOUD\SOME-Grading-Automation\static\somelogo.jpg'
     with open(json_path, 'r') as fp:
         tabular_data = json.load(fp)
     with open(scores_json_path, 'r') as fp:

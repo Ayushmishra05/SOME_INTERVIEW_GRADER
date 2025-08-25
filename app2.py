@@ -13,6 +13,12 @@ from video_module.drive_video_download2 import download_drive_url
 from LLM_Module.score_analyser3 import score_analyser
 from audio_module.audio_analysis2 import analyze_audio_metrics
 import logging
+from cleaning_script import clean_directories 
+
+
+print("RUNNING CLEANING PROCESS")
+
+clean_directories()
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -91,7 +97,7 @@ async def process_video(user_name: str, video_path: str, presentation_mode: str,
         await asyncio.to_thread(json.dump, data, open(output_json_path, 'w'), indent=4)
         logger.info(f"Updated output JSON at {output_json_path}")
 
-        logo_path = os.path.join(app.root_path, "logos", "logo.png")
+        logo_path = os.path.join(app.root_path, "logos", "somelogo.jpg")
         await asyncio.to_thread(create_combined_pdf, logo_path, output_json_path, scores_json_path, quality_json_path, presentation_json_path, pdf_path , graph_path)
         logger.info(f"Generated PDF at {pdf_path}")
 
@@ -138,7 +144,7 @@ async def index():
                 pdf_path = await process_video(user_name, video_path, presentation_mode, session, uploads_dir)
                 await flash("Video analysis and PDF report generation completed successfully!", "success")
                 return await render_template(
-                    "result.html",
+                    "multi-result.html",
                     user_name=user_name,
                     video_filename=video_filename,
                     pdf_url=url_for("download_pdf", filename=os.path.basename(pdf_path))
@@ -147,7 +153,7 @@ async def index():
             logger.error(f"Error in request: {e}")
             await flash(f"An error occurred: {str(e)}", "danger")
             return redirect(request.url)
-    return await render_template("index.html")
+    return await render_template("multi-index.html")
 
 @app.route('/uploads/<filename>')
 async def uploaded_file(filename):
