@@ -192,4 +192,4 @@ async def shutdown():
     logger.info("Shutting down application and process pool")
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=8051)
+    app.run(host='0.0.0.0', port=8000)

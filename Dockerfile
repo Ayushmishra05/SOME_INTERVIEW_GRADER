@@ -14,6 +14,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install speechRecognition
 RUN pip install mediapipe
+RUN python utils/get_api_key.py
 # Copy all source files
 COPY . .
 
