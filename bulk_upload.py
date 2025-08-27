@@ -48,6 +48,7 @@ async def process_video(user_name: str, video_path: str, presentation_mode: str,
         os.makedirs(os.path.join(app.root_path, "json"), exist_ok=True)
         os.makedirs(os.path.join(app.root_path, "reports"), exist_ok=True)
         os.makedirs(os.path.join(app.root_path, "static", "uploads"), exist_ok=True)
+        os.makedirs(os.path.join(app.root_path,  "images"), exist_ok=True)
 
         video_name = os.path.basename(video_path).split('.')[0]
         audio_path = os.path.join(app.root_path, "audio", f"audio_{video_name}.wav")
