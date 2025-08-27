@@ -6,60 +6,59 @@ from reportlab.lib.units import inch
 from datetime import datetime
 import json
 import re
-import math
-import os 
+import os
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from LLM_Module.Overall_Analyser import VideoResumeEvaluator 
-from config import save_path
+from report_generation_module.plot_generator import generate_radar_chart
 
-pdfmetrics.registerFont(TTFont('Arial', r'ARIAL.TTF'))
-pdfmetrics.registerFont(TTFont('Arial-Bold', r'ArialBD.ttf'))
+pdfmetrics.registerFont(TTFont('Arial', 'fonts/ARIAL.TTF'))
+pdfmetrics.registerFont(TTFont('Arial-Bold', 'fonts/ArialBD.ttf'))
 styles = getSampleStyleSheet()
 styles['BodyText'].fontName = 'Arial'
 
-def create_combined_pdf(logo_path, json_path):
-    with open("json/presentation.json", "r") as file:
+def create_combined_pdf(logo_path, json_path, scores_json_path, quality_json_path, presentation_json_path, output_pdf_path , graph_path):
+    with open(presentation_json_path, "r") as file:
         data = json.load(file)
-
     presentation_mode = data.get("presentation_mode", False)
+    logo_path = r'static/somelogo.jpg'
     with open(json_path, 'r') as fp:
         tabular_data = json.load(fp)
-
-    with open(r'json/scores.json', 'r') as fp:
+    with open(scores_json_path, 'r') as fp:
         quality_data = json.load(fp)
         midval = list(quality_data.values())
-        
     if presentation_mode == 'on':
         llm_questions = [
-            "Questions", 
-            "Did the Speaker Speak with Confidence ?", 
+            "Questions",
+            "Did the Speaker Speak with Confidence ?",
             "Did the speaker vary their tone, speed, volume while delivering the speech/presentation? ",
+            "Did they use any gestures with their hands or body while speaking?",
+            "Did they have expressions on their faces?",
             "Did the speech have a structure of Opening, Body and Conclusion? ",
+            "Did the speaker keep the presentation engaging by adding relevant examples, anecdotes and data to back their content?   ",
             "Was the overall “Objective” of the speech delivered clearly?",
-            "Was the content of the presentation/speech brief and to the point, or did it include unnecessary details that may have distracted or confused the audience?",
-            "Was the content of the presentation/speech engaging, and did it capture the audience’s attention?", 
-            "Was the content of the presentation/speech relevant to the objective of the presentation?", 
-            "Was the content of the presentation/speech clear and easy to understand?", 
-            "Did the speaker add relevant examples, anecdotes and data to back their content?",
-            "Did the speaker demonstrate credibility? Will you trust the speaker?", 
-            "Did the speaker clearly explain how the speech or topic would benefit you and what you could gain from it?", 
-            "Was the speaker able to evoke an emotional connection with the audience?", 
+            "Was the content of the presentation/speech to the point, or did it include unnecessary details that may have distracted or confused the audience?",
+            "Was the content of the presentation/speech relevant to the objective of the presentation?",
+            "Was the content of the presentation/speech clear and easy to understand?",
+            "Did the speaker demonstrate credibility? Will you trust the speaker? ",
+            "Did the speaker explain how the speech or topic of the presentation would benefit the audience and what they could gain from it?",
+            "Did the speaker make an emotional connection with the audience ? ",
             "Overall, were you convinced/ persuaded with the speaker’s view on the topic?"
         ]
-    else: 
+    else:
         llm_questions = [
-            "Questions", 
-            "Did the Speaker Speak with Confidence ?", 
-            "Was the content interesting and as per the guidelines provided?",
-            "Who are you and what are your skills, expertise, and personality traits?",
+            "Questions",
+            "Did the Speaker Speak with Confidence ?",
+            "Did the speaker vary their tone, speed, volume?",
+            "Did they use any gestures with their hands or body while speaking? ",
+            "Did they have expressions on their faces?",
+            "Who are you and what are your skills, expertise, personality traits ?",
             "Why are you the best person to fit this role?",
-            "How are you different from others?",
+            "How are you different from others? ",
             "What value do you bring to the role?",
-            "Did the speech have a structure of Opening, Body, and Conclusion?",
-            "Did the speaker vary their tone, speed, and volume while delivering the speech/presentation?", 
-            "How was the quality of research for the topic? Did the speech demonstrate good depth? Did they cite sources?",
-            "How convinced were you with the overall speech on the topic? Was it persuasive? Will you consider them for the job/opportunity?"
+            "Did the speech have a structure of Opening, Body and Conclusion?",
+            "How was the quality of research for the topic? Did the student’s speech demonstrate a good depth? Did they cite the sources of research properly?",
+            "How creatively did the student present the video?",
+            "How convinced were you with the overall speech on the topic? Was it persuasive? Will you give them the job/opportunity? "
         ]
 
     def clean_answer(answer):
@@ -67,12 +66,8 @@ def create_combined_pdf(logo_path, json_path):
 
     llm_answers = []
     if 'LLM' in tabular_data:
-        llm_answers = re.split(r'\n(?=\d+\.)', tabular_data['LLM'])
-            
-    doc = SimpleDocTemplate("reports/combined_report.pdf", 
-                            pagesize=letter,
-                            topMargin=1.5*inch,
-                            bottomMargin=0.8*inch)
+        llm_answers = re.split(r'\n(?=\d+[.)])', tabular_data['LLM'])
+    doc = SimpleDocTemplate(output_pdf_path, pagesize=letter, topMargin=1.5*inch, bottomMargin=0.8*inch)
     flowables = []
     styles = getSampleStyleSheet()
 
@@ -80,35 +75,21 @@ def create_combined_pdf(logo_path, json_path):
         canvas.saveState()
         logo = Image(logo_path, width=2*inch, height=1*inch)
         logo.drawOn(canvas, (letter[0]-2*inch)/2, letter[1]-1.2*inch)
-        website_text = "https://some.education.in"
+        website_text = "https://some.education"
         canvas.setFont("Arial", 9)
-        canvas.linkURL("https://some.education.in",
-                       (0.5*inch, 0.3*inch, 2.5*inch, 0.5*inch),
-                       relative=1)
+        canvas.linkURL("https://some.education", (0.5*inch, 0.3*inch, 2.5*inch, 0.5*inch), relative=1)
         canvas.drawString(0.5*inch, 0.3*inch, website_text)
         page_num = canvas.getPageNumber()
         canvas.drawRightString(letter[0]-0.5*inch, 0.3*inch, f"Page {page_num}")
         canvas.restoreState()
 
-    section_style = ParagraphStyle(
-        'SectionStyle',
-        parent=styles['BodyText'],
-        fontName='Arial-Bold',
-        fontSize=10,
-        spaceAfter=12,
-        leading=16
-    )
-    bullet_style = ParagraphStyle(
-        'BulletStyle',
-        parent=styles['BodyText'],
-        fontSize=10,
-        leading=14,
-        spaceAfter=6,
-        leftIndent=10
-    )
-
+    section_style = ParagraphStyle('SectionStyle', parent=styles['BodyText'], fontName='Arial-Bold', fontSize=10, spaceAfter=12, leading=16)
+    bullet_style = ParagraphStyle('BulletStyle', parent=styles['BodyText'], fontSize=10, leading=14, spaceAfter=6, leftIndent=10)
     name = tabular_data.get('User Name', 'Unknown Candidate')
     now = datetime.now()
+    with open(scores_json_path, "r") as file:
+        data = json.load(file)
+    score = sum(data.values())
     formatted_date = now.strftime("%d %B %Y")
     title = Paragraph(
         f"<para alignment='center'><b>{name}</b><br/></para>"
@@ -117,17 +98,57 @@ def create_combined_pdf(logo_path, json_path):
     )
     flowables.append(title)
     flowables.append(Spacer(1, 24))
+    iq_style = ParagraphStyle('IQStyle', parent=styles['BodyText'], fontName='Helvetica-Bold', fontSize=14, spaceAfter=12)
+    if presentation_mode == "on":
+        iq_style = ParagraphStyle(
+            'IQStyle',
+            parent=styles['BodyText'],
+            fontName='Helvetica-Bold',
+            fontSize=14,      # slightly larger
+            spaceAfter=12
+        )
+        print("Printing Scores , " , score)
+
+
+        flowables.append(
+            Paragraph(f"<b>Influence Quotient: {(round(score/65 * 100))}/100</b>", iq_style)
+        )
+        flowables.append(Spacer(1, 16))
+    else:
+        print("Printing Scores , " , score)
+        iq_style = ParagraphStyle(
+            'IQStyle',
+            parent=styles['BodyText'],
+            fontName='Helvetica-Bold',
+            fontSize=14,      # slightly larger
+            spaceAfter=12
+        )
+
+
+        flowables.append(
+            Paragraph(f"<b>Influence Quotient: {round((score / 50 * 100))}/100</b>", iq_style)
+        )
+        flowables.append(Spacer(1, 16))
+    chart_path = f"images/output_{os.path.basename(json_path).split('.')[0]}.png"
+    try:
+        generate_radar_chart(presentation_json_path , graph_path , scores_json_path , chart_path)
+        chart_img = Image(chart_path, width=4.5*inch, height=3*inch)
+        flowables.append(Paragraph("Overall Evaluation Summary", section_style))
+        flowables.append(chart_img)
+        flowables.append(Spacer(1, 18))
+    except Exception as e:
+        print(f"Error generating radar chart: {e}")
+        flowables.append(Paragraph("Overall Evaluation Summary (Chart unavailable)", section_style))
+        flowables.append(Spacer(1, 18))
 
     def add_quality_section(title, items):
         flowables.append(Paragraph(title, section_style))
-        bullet_list = []
         for item in items:
-            bullet_list.append(Paragraph(f"• {item}", bullet_style))
-        flowables.extend(bullet_list)
+            flowables.append(Paragraph(f"• {item}", bullet_style))
         flowables.append(Spacer(1, 18))
-    
+
     try:
-        with open(r'json/quality_analysis.json', 'r') as fp:
+        with open(quality_json_path, 'r') as fp:
             quality_data = json.load(fp)
         add_quality_section("Qualitative Analysis - Positive", quality_data["Qualitative Analysis"])
         add_quality_section("Qualitative Analysis - Areas of Improvement", quality_data["Quantitative Analysis"])
@@ -136,27 +157,20 @@ def create_combined_pdf(logo_path, json_path):
 
     flowables.append(Spacer(1, 18))
     flowables.append(PageBreak())
-
     section_style = ParagraphStyle('SectionStyle', parent=styles['BodyText'], fontName='Helvetica-Bold', fontSize=10, spaceAfter=12, leading=16)
     flowables.append(Paragraph("<b>Detailed Evaluation Metrics</b>", section_style))
     flowables.append(Spacer(1, 24))
-
     normal_style = ParagraphStyle('NormalStyle', parent=styles['BodyText'], fontSize=10, leading=12, spaceAfter=6)
     bold_style = ParagraphStyle('BoldStyle', parent=normal_style, fontName='Helvetica-Bold')
-
-    # Modified table data with new middle column
     table_data = [
         [
             Paragraph("<b>No.</b>", bold_style),
             Paragraph("<b>Items to look out for</b>", bold_style),
-            Paragraph("<b>Middle Column</b>", bold_style),  # New column
-            Paragraph("<b>5 point scale / Answer</b>", bold_style)
+            Paragraph("<b>5 point Scale</b>", bold_style),
+            Paragraph("<b>Remarks / Feedback</b>", bold_style)
         ]
     ]
-
     for i, question in enumerate(llm_questions[1:], 1):
-        print("I VALUE --> " , i)
-        print("MID VAL --> " , midval)
         if i == 1:
             sub_items = [
                 ("Posture", "posture"),
@@ -182,28 +196,21 @@ def create_combined_pdf(logo_path, json_path):
                 else:
                     scores.append("Poor")
             scores_text = "<br/>" + "<br/>".join([f"<b>{score}</b>" for score in scores])
-            print(" I ---- > ",  i -1  , midval[i-1])
             table_data.append([
                 Paragraph(f"{i}.", normal_style),
                 Paragraph(items_text, normal_style),
-                Paragraph(midval[i - 1], normal_style),  
+                Paragraph(str(midval[i - 1]), normal_style),
                 Paragraph(scores_text, normal_style)
             ])
         else:
             answer_index = i if i < len(llm_answers) else None
-            if answer_index is not None:
-                answer = clean_answer(llm_answers[answer_index])
-            else:
-                answer = "N/A"
-            print(" I ---- > ",  i -1  , midval[i-1])
+            answer = clean_answer(llm_answers[answer_index]) if answer_index is not None else "N/A"
             table_data.append([
                 Paragraph(f"{i}.", normal_style),
                 Paragraph(question, normal_style),
-                Paragraph(midval[i -1], normal_style),  
+                Paragraph(str(midval[i - 1]), normal_style),
                 Paragraph(answer, normal_style)
             ])
-
-    # Create table with adjusted column widths
     table = Table(table_data, colWidths=[40, 250, 80, 200])
     table.setStyle(TableStyle([
         ('ALIGN', (0,0), (-1,-1), 'LEFT'),
@@ -218,13 +225,5 @@ def create_combined_pdf(logo_path, json_path):
         ('RIGHTPADDING', (0,0), (-1,-1), 4),
     ]))
     flowables.append(table)
-
-    doc.build(flowables, 
-              onFirstPage=add_header_footer,
-              onLaterPages=add_header_footer)
-
+    doc.build(flowables, onFirstPage=add_header_footer, onLaterPages=add_header_footer)
     print("PDF generated successfully with dynamic table!")
-    os.remove(save_path)
-
-if __name__ == "__main__":
-    create_combined_pdf(r"logos\somelogo.jpg" , r"json\output.json")

@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "multi-base.html" %}
 
 {% block content %}
   <style>
@@ -23,7 +23,7 @@
       margin-bottom: 0.5rem;
       font-size: 1rem;
     }
-    .form-input {
+    .form-input, .form-select {
       width: 100%;
       padding: 16px 20px;
       border: 2px solid #e0e0e0;
@@ -32,7 +32,7 @@
       font-family: inherit;
       transition: border-color 0.3s ease;
     }
-    .form-input:focus {
+    .form-input:focus, .form-select:focus {
       outline: none;
       border-color: #441C5B;
       box-shadow: 0 0 0 3px rgba(68, 28, 91, 0.1);
@@ -41,9 +41,9 @@
       padding: 12px 20px;
     }
 
-    .video-type-section { margin-bottom: 1.5rem; }
-    .video-type-buttons { display: flex; gap: 1rem; margin-top: 0.5rem; }
-    .video-type-btn {
+    .video-type-section, .mode-toggle-section { margin-bottom: 1.5rem; }
+    .video-type-buttons, .mode-toggle-buttons { display: flex; gap: 1rem; margin-top: 0.5rem; }
+    .video-type-btn, .mode-toggle-btn {
       flex: 1;
       padding: 16px 24px;
       border: 2px solid #e0e0e0;
@@ -55,15 +55,15 @@
       transition: all 0.3s ease;
       font-family: inherit;
     }
-    .video-type-btn:hover { border-color: #441C5B; background: rgba(68,28,91,0.05); }
-    .video-type-btn.selected { background: #441C5B; color: #fff; border-color: #441C5B; }
+    .video-type-btn:hover, .mode-toggle-btn:hover { border-color: #441C5B; background: rgba(68,28,91,0.05); }
+    .video-type-btn.selected, .mode-toggle-btn.selected { background: var(--highlight); color: #fff; border-color: var(--highlight); }
 
-    .upload-btn {
-      width: 100%; padding: 20px 24px; background: #EC8840; color: #fff; border: none; border-radius: 8px;
+    .upload-btn, .save-tuning-btn {
+      width: 100%; padding: 20px 24px; background: var(--highlight); color: #fff; border: none; border-radius: 8px;
       font-size: 1.2rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;
       display: flex; align-items: center; justify-content: center; gap: 0.5rem; font-family: inherit;
     }
-    .upload-btn:hover {
+    .upload-btn:hover, .save-tuning-btn:hover {
       background: #d17a35;
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(236, 136, 64, 0.3);
@@ -81,8 +81,8 @@
     .submissions-table tr { border-radius: 12px; box-shadow: 0 2px 8px 0 rgba(68, 28, 91, 0.04); }
     .submissions-table td:nth-child(2) { white-space: normal; word-break: break-all; max-width: 220px; }
 
-    .score-badge { display: inline-block; padding: 0.4em 1.2em; border-radius: 1.2em; color: #fff; font-weight: 700; font-size: 1em; background: #EC8840; }
-    .score-badge.score-orange { background: #EC8840; }
+    .score-badge { display: inline-block; padding: 0.4em 1.2em; border-radius: 1.2em; color: #fff; font-weight: 700; font-size: 1em; background: var(--highlight); }
+    .score-badge.score-orange { background: var(--highlight); }
     .score-badge.score-purple { background: #4B1869; }
     .score-badge.score-yellow { background: #FFF6D6; color: #4B1869; }
     .score-badge.score-red { background: #FDE6E0; color: #4B1869; }
@@ -92,7 +92,7 @@
     .status-badge.processing { background: #fffbe6; color: #bfa100; }
 
     .report-btn { background: #2a1a3a; color: #fff; border: none; border-radius: 1em; padding: 0.7em 1em; font-weight: 700; font-size: 1em; cursor: pointer; transition: background 0.2s; text-decoration: none; display: inline-block; box-shadow: 0 2px 8px 0 rgba(68, 28, 91, 0.10); }
-    .report-btn:hover:not(.disabled) { background: #EC8840; color: #fff; }
+    .report-btn:hover:not(.disabled) { background: var(--highlight); color: #fff; }
     .report-btn.disabled { background: #d3d3d3; color: #888; cursor: not-allowed; }
 
     .flash-message {
@@ -114,6 +114,65 @@
     .file-list:empty::before { 
       content: "No files selected"; 
       color: #888; 
+    }
+
+    .question-group { margin-bottom: 1.5rem; }
+    .question-label { font-weight: 500; color: #441C5B; margin-bottom: 0.5rem; display: block; }
+    .progress-container { 
+      display: flex; 
+      align-items: center; 
+      gap: 1rem; 
+      position: relative; 
+    }
+    .progress-bar { 
+      flex: 1; 
+      height: 8px; 
+      background: #e0e0e0; 
+      border-radius: 4px; 
+      overflow: hidden; 
+    }
+    .progress-bar-fill { 
+      height: 100%; 
+      background: var(--highlight); 
+      transition: width 0.3s ease; 
+    }
+    .progress-value { 
+      width: 60px; 
+      text-align: right; 
+      font-size: 0.9rem; 
+      color: #441C5B; 
+    }
+    .slider { 
+      -webkit-appearance: none; 
+      width: 100%; 
+      height: 8px; 
+      background: #e0e0e0; 
+      border-radius: 4px; 
+      outline: none; 
+      transition: background 0.3s ease; 
+    }
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      background: var(--highlight);
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid #fff;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    .slider::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      background: var(--highlight);
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid #fff;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    .slider:hover { 
+      background: #d0d0d0; 
     }
 
     @media (max-width: 1100px) {
@@ -199,27 +258,214 @@
         <p>This section will show and allow editing of your profile information.</p>
       </div>
     </div>
+    <div id="model-tuning-section" class="tab-section" style="display:none;">
+      <div class="upload-card">
+        <h2>Model Tuning</h2>
+        <p>Configure model parameters and question weightages for video analysis.</p>
+        <form id="modelTuningForm">
+          <div class="form-group mode-toggle-section">
+            <label class="form-label">Select Mode:</label>
+            <div class="mode-toggle-buttons">
+              <button type="button" class="mode-toggle-btn selected" data-mode="presentation">Presentation Mode</button>
+              <button type="button" class="mode-toggle-btn" data-mode="video_resume">Video Resume Mode</button>
+            </div>
+            <input type="hidden" id="tuningModeInput" name="tuning_mode" value="presentation">
+          </div>
+          <div class="form-group">
+            <label for="score_model" class="form-label">Score Model</label>
+            <select id="score_model" name="score_model" class="form-select" required>
+              <option value="gpt-4" {% if model_config.score == 'gpt-4' %}selected{% endif %}>gpt-4</option>
+              <option value="gpt-4-turbo" {% if model_config.score == 'gpt-4-turbo' %}selected{% endif %}>gpt-4-turbo</option>
+              <option value="gpt-3.5-turbo" {% if model_config.score == 'gpt-3.5-turbo' %}selected{% endif %}>gpt-3.5-turbo</option>
+              <option value="gpt-4.1" {% if model_config.score == 'gpt-4.1' %}selected{% endif %}>gpt-4.1</option>
+              <option value="gpt-4.1-mini" {% if model_config.score == 'gpt-4.1-mini' %}selected{% endif %}>gpt-4.1-mini</option>
+              <option value="gpt-4o" {% if model_config.score == 'gpt-4o' %}selected{% endif %}>gpt-4o</option>
+              <option value="gpt-4o-mini" {% if model_config.score == 'gpt-4o-mini' %}selected{% endif %}>gpt-4o-mini</option>
+            </select>
+        <small style="color: #441C5B; margin-top: 0.5rem; display: block;">
+          Currently using: <strong>{{ model_config.score }}</strong>
+        </small>
+
+          </div>
+
+          <div class="form-group">
+            <label for="overall_analysis_model" class="form-label">Overall Analysis Model</label>
+            <select id="overall_analysis_model" name="overall_analysis_model" class="form-select" required>
+              <option value="gpt-4" {% if model_config.overall == 'gpt-4' %}selected{% endif %}>gpt-4</option>
+              <option value="gpt-4-turbo" {% if model_config.overall == 'gpt-4-turbo' %}selected{% endif %}>gpt-4-turbo</option>
+              <option value="gpt-3.5-turbo" {% if model_config.overall == 'gpt-3.5-turbo' %}selected{% endif %}>gpt-3.5-turbo</option>
+              <option value="gpt-4.1" {% if model_config.overall == 'gpt-4.1' %}selected{% endif %}>gpt-4.1</option>
+              <option value="gpt-4.1-mini" {% if model_config.overall == 'gpt-4.1-mini' %}selected{% endif %}>gpt-4.1-mini</option>
+              <option value="gpt-4o" {% if model_config.overall == 'gpt-4o' %}selected{% endif %}>gpt-4o</option>
+              <option value="gpt-4o-mini" {% if model_config.overall == 'gpt-4o-mini' %}selected{% endif %}>gpt-4o-mini</option>
+            </select>
+        <small style="color: #441C5B; margin-top: 0.5rem; display: block;">
+          Currently using: <strong>{{ model_config.overall }}</strong>
+        </small>
+          </div>
+
+          <div class="form-group">
+            <label for="qualitative_analysis_model" class="form-label">Qualitative Analysis Model</label>
+            <select id="qualitative_analysis_model" name="qualitative_analysis_model" class="form-select" required>
+              <option value="gpt-4" {% if model_config.qualitative == 'gpt-4' %}selected{% endif %}>gpt-4</option>
+              <option value="gpt-4-turbo" {% if model_config.qualitative == 'gpt-4-turbo' %}selected{% endif %}>gpt-4-turbo</option>
+              <option value="gpt-3.5-turbo" {% if model_config.qualitative == 'gpt-3.5-turbo' %}selected{% endif %}>gpt-3.5-turbo</option>
+              <option value="gpt-4.1" {% if model_config.qualitative == 'gpt-4.1' %}selected{% endif %}>gpt-4.1</option>
+              <option value="gpt-4.1-mini" {% if model_config.qualitative == 'gpt-4.1-mini' %}selected{% endif %}>gpt-4.1-mini</option>
+              <option value="gpt-4o" {% if model_config.qualitative == 'gpt-4o' %}selected{% endif %}>gpt-4o</option>
+              <option value="gpt-4o-mini" {% if model_config.qualitative == 'gpt-4o-mini' %}selected{% endif %}>gpt-4o-mini</option>
+            </select>
+        <small style="color: #441C5B; margin-top: 0.5rem; display: block;">
+          Currently using: <strong>{{ model_config.qualitative }}</strong>
+        </small>
+          </div>
+
+          <div id="presentation-questions" class="questions-section">
+            <h3>Presentation Mode Questions</h3>
+            {% set presentation_questions = [
+              ('p_question_1', 'Did the Speaker Speak With Confidence ?', model_config.p_question_1),
+              ('p_question_2', 'Did the speaker vary their tone, speed, volume while delivering the speech/presentation?', model_config.p_question_2),
+              ('p_question_3', 'Did they use any gestures with their hands or body while speaking?', model_config.p_question_3),
+              ('p_question_4', 'Did they have expressions on their faces? ', model_config.p_question_4),
+              ('p_question_5', 'Did the speech have a structure of Opening, Body and Conclusion?', model_config.p_question_5),
+              ('p_question_6', 'Did the speaker keep the presentation engaging by adding relevant examples, anecdotes and data to back their content?', model_config.p_question_6),
+              ('p_question_7', 'Was the overall “Objective” of the speech delivered clearly?', model_config.p_question_7),
+              ('p_question_8', 'Was the content of the presentation/speech to the point, or did it include unnecessary details that may have distracted or confused the audience?', model_config.p_question_8),
+              ('p_question_9', 'Was the content of the presentation/speech relevant to the objective of the presentation?', model_config.p_question_9),
+              ('p_question_10', 'Was the content of the presentation/speech clear and easy to understand?', model_config.p_question_10),
+              ('p_question_11', 'Did the speaker demonstrate credibility? Will you trust the speaker?', model_config.p_question_11),
+              ('p_question_12', 'Did the speaker explain how the speech or topic of the presentation would benefit the audience and what they could gain from it?', model_config.p_question_12),
+              ('p_question_13', 'Did the speaker make an emotional connection with the audience ?', model_config.p_question_13),
+              ('p_question_14', 'Overall, were you convinced/ persuaded with the speaker’s view on the topic?', model_config.p_question_14)
+            ] %}
+            {% for name, label, value in presentation_questions %}
+            <div class="question-group">
+              <label class="question-label">{{ label }} Weightage</label>
+              <div class="progress-container">
+                <div class="progress-bar">
+                  <div class="progress-bar-fill" style="width: {{ value }}%;"></div>
+                </div>
+                <input type="range" name="{{ name }}" class="slider" value="{{ value }}" min="1" max="100" required>
+                <span class="progress-value">{{ value }}</span>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          <div id="video-resume-questions" class="questions-section" style="display:none;">
+            <h3>Video Resume Mode Questions</h3>
+            {% set video_resume_questions = [
+              ('v_question_1', 'Did the Speaker Speak with Confidence ?', model_config.v_question_1),
+              ('v_question_2', 'Did the speaker vary their tone, speed, volume?', model_config.v_question_2),
+              ('v_question_3', 'Did they use any gestures with their hands or body while speaking? ', model_config.v_question_3),
+              ('v_question_4', 'Did they have expressions on their faces?', model_config.v_question_4),
+              ('v_question_5', 'Who are you and what are your skills, expertise, personality traits ?', model_config.v_question_5),
+              ('v_question_6', 'Why are you the best person to fit this role?', model_config.v_question_6),
+              ('v_question_7', 'How are you different from others?', model_config.v_question_7),
+              ('v_question_8', 'What value do you bring to the role?', model_config.v_question_8),
+              ('v_question_9', 'Did the speech have a structure of Opening, Body and Conclusion?', model_config.v_question_9),
+              ('v_question_10', 'How was the quality of research for the topic? Did the students speech demonstrate a good depth? Did they cite the sources of research properly?', model_config.v_question_10),
+              ('v_question_11', 'How creatively did the student present the video?', model_config.v_question_11),
+              ('v_question_12', 'How convinced were you with the overall speech on the topic?', model_config.v_question_12)
+            ] %}
+            {% for name, label, value in video_resume_questions %}
+            <div class="question-group">
+              <label class="question-label">{{ label }} Weightage</label>
+              <div class="progress-container">
+                <div class="progress-bar">
+                  <div class="progress-bar-fill" style="width: {{ value }}%;"></div>
+                </div>
+                <input type="range" name="{{ name }}" class="slider" value="{{ value }}" min="1" max="100" required>
+                <span class="progress-value">{{ value }}</span>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          <button type="submit" class="save-tuning-btn">
+            <i class="fas fa-save"></i>
+            Save Tuning
+          </button>
+        </form>
+      </div>
+    </div>
   </div>
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
+      console.log('DOM fully loaded');
+
       const form = document.getElementById('videoAnalysisForm');
       const videoTypeButtons = document.querySelectorAll('.video-type-btn');
-      const tabs = document.querySelectorAll('.sidebar-tab');
+      const tabs = document.querySelectorAll('.dashboard-sidebar-tab');
       const sections = document.querySelectorAll('.tab-section');
       const fileInput = document.getElementById('video_files');
       const fileList = document.getElementById('fileList');
       const clearFilesBtn = document.getElementById('clearFiles');
+      const tuningForm = document.getElementById('modelTuningForm');
+      const modeToggleButtons = document.querySelectorAll('.mode-toggle-btn');
+      const tuningModeInput = document.getElementById('tuningModeInput');
+      const presentationQuestions = document.getElementById('presentation-questions');
+      const videoResumeQuestions = document.getElementById('video-resume-questions');
 
-      const buttons = document.querySelectorAll('.video-type-btn');
-      const presentationModeInput = document.getElementById('presentationModeInput');
+      // Debug: Log all tabs
+      console.log('Found tabs:', tabs.length, Array.from(tabs).map(t => t.dataset.section));
 
-      buttons.forEach(button => {
-        button.addEventListener('click', () => {
-          buttons.forEach(b => b.classList.remove('selected'));
-          button.classList.add('selected');
-          presentationModeInput.value = button.dataset.type;
+      // Sidebar Tab Switching Logic
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          console.log('Tab clicked:', tab.dataset.section);
+          tabs.forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          sections.forEach(sec => {
+            if (sec.id === `${tab.dataset.section}-section`) {
+              console.log('Showing section:', sec.id);
+              sec.classList.add('active');
+              sec.style.display = 'block';
+            } else {
+              console.log('Hiding section:', sec.id);
+              sec.classList.remove('active');
+              sec.style.display = 'none';
+            }
+          });
         });
+      });
+
+      // Video type toggle
+      videoTypeButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          videoTypeButtons.forEach(b => b.classList.remove('selected'));
+          button.classList.add('selected');
+          document.getElementById('presentationModeInput').value = button.dataset.type;
+        });
+      });
+
+      // Mode toggle for model tuning
+      modeToggleButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          modeToggleButtons.forEach(b => b.classList.remove('selected'));
+          button.classList.add('selected');
+          tuningModeInput.value = button.dataset.mode;
+          if (button.dataset.mode === 'presentation') {
+            presentationQuestions.style.display = 'block';
+            videoResumeQuestions.style.display = 'none';
+          } else {
+            presentationQuestions.style.display = 'none';
+            videoResumeQuestions.style.display = 'block';
+          }
+        });
+      });
+
+      // Update progress bars with sliders
+      document.querySelectorAll('.slider').forEach(slider => {
+        const updateProgress = () => {
+          const value = Math.min(Math.max(parseInt(slider.value) || 1, 1), 100);
+          const progressBarFill = slider.parentElement.querySelector('.progress-bar-fill');
+          const progressValue = slider.parentElement.querySelector('.progress-value');
+          progressBarFill.style.width = `${value}%`;
+          progressValue.textContent = value;
+        };
+        slider.addEventListener('input', updateProgress);
+        // Initialize on load
+        updateProgress();
       });
 
       // Display selected files
@@ -245,7 +491,7 @@
         console.log('Files cleared');
       });
 
-      // Handle form submission
+      // Handle video analysis form submission
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const submitBtn = form.querySelector('.upload-btn');
@@ -271,7 +517,6 @@
           return;
         }
 
-        // Validate file sizes (max 100MB each)
         for (let file of videoFiles) {
           if (file.size > 100 * 1024 * 1024) {
             alert(`File ${file.name} is too large. Maximum size is 100MB per file.`);
@@ -294,7 +539,7 @@
 
           if (response.ok) {
             const html = await response.text();
-            document.documentElement.innerHTML = html; // Load result.html
+            document.documentElement.innerHTML = html;
           } else {
             const errorText = await response.text();
             console.error('Server error:', errorText, 'Status:', response.status);
@@ -310,22 +555,75 @@
         }
       });
 
-      // Sidebar Tab Switching Logic
-      tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-          tabs.forEach(t => t.classList.remove('active'));
-          tab.classList.add('active');
-          sections.forEach(sec => {
-            if (sec.id === tab.dataset.section + '-section') {
-              sec.classList.add('active');
-              sec.style.display = '';
-            } else {
-              sec.classList.remove('active');
-              sec.style.display = 'none';
+      // Handle model tuning form submission
+// Handle model tuning form submission
+    tuningForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const submitBtn = tuningForm.querySelector('.save-tuning-btn');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        submitBtn.disabled = true;
+
+        try {
+            const formData = new FormData(tuningForm);
+            const jsonData = {
+                score_model: formData.get('score_model'),
+                overall_analysis_model: formData.get('overall_analysis_model'),
+                qualitative_analysis_model: formData.get('qualitative_analysis_model'),
+                questions: {}
+            };
+
+            // Collect ALL questions (both presentation and video resume)
+            // Presentation questions (p_question_1 to p_question_14)
+            for (let i = 1; i <= 14; i++) {
+                const value = formData.get(`p_question_${i}`);
+                if (value) {
+                    jsonData.questions[`p_question_${i}`] = value;
+                }
             }
-          });
-        });
-      });
+            
+            // Video resume questions (v_question_1 to v_question_12)  
+            for (let i = 1; i <= 12; i++) {
+                const value = formData.get(`v_question_${i}`);
+                if (value) {
+                    jsonData.questions[`v_question_${i}`] = value;
+                }
+            }
+
+            console.log('Tuning JSON data:', JSON.stringify(jsonData, null, 2));
+
+            // Send to backend
+            const response = await fetch('/save_tuning', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(jsonData)
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Server responded with status ${response.status}: ${errorText}`);
+            }
+            
+            const result = await response.json();
+            if (result.status === 'success') {
+                alert('Tuning settings saved successfully!');
+            } else {
+                throw new Error(result.message || 'Unknown error occurred');
+            }
+
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        } catch (error) {
+            console.error('Tuning save error:', error);
+            alert(`Failed to save tuning settings: ${error.message}`);
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }
+    });
+
 
       // Load submissions when the tab is clicked
       async function loadSubmissions() {

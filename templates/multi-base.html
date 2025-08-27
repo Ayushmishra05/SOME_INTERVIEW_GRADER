@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Video Analysis & Report Generator</title>
+  
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome for sidebar icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  
+  <!-- Animate.css -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+  
+  <style>
+    :root {
+      --primary: #0090ab;
+      --secondary: #dd1a5b;
+      --accent: #4f2263;
+      --highlight: #ec7422;
+      --primary-blue: #0090ab;
+      --gradient-1: linear-gradient(135deg, #0090ab 0%, #4f2263 100%);
+      --gradient-2: linear-gradient(45deg, #dd1a5b 0%, #ec7422 100%);
+    }
+    
+    body {
+      background: #f8f9fa;
+      color: #4a4a4a;
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .dashboard-layout {
+      display: flex;
+      min-height: 100vh;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    .dashboard-sidebar {
+      width: 35%;
+      max-width: 350px; /* Added to prevent expansion */
+      flex-shrink: 0; /* Prevent sidebar from shrinking */
+      background: linear-gradient(49deg, rgba(168, 85, 247, 0.3) 0%, rgba(124, 58, 237, 0.2) 24%, transparent 50%), #441c5b;
+      color: #fff;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      margin: 0;
+      box-sizing: border-box; /* Ensure padding is included in width */
+    }
+
+    .dashboard-sidebar .logo-section {
+      text-align: center;
+    }
+
+    .dashboard-sidebar .logo {
+      width: 100%;
+      max-width: 300px;
+      height: auto;
+      margin-bottom: 0.5rem;
+    }
+
+    .dashboard-sidebar-tabs {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin: 2rem 0;
+    }
+
+    .dashboard-sidebar-tab {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1.2rem 1.5rem;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #fff;
+      background: rgba(255,255,255,0.08);
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+      box-shadow: none;
+      outline: none;
+      text-align: left;
+    }
+
+    .dashboard-sidebar-tab:hover,
+    .dashboard-sidebar-tab:focus {
+      background: rgba(236, 136, 64, 0.18);
+      color: #EC8840;
+    }
+
+    .dashboard-sidebar-tab.active {
+      background: rgba(236, 136, 64, 0.25);
+      color: #EC8840;
+      box-shadow: 0 2px 8px 0 rgba(236, 136, 64, 0.10);
+    }
+
+    .dashboard-tips-section {
+      background: linear-gradient(135deg, #2a1a3a 0%, #1a1a2e 100%);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-top: 1rem;
+    }
+
+    .dashboard-tips-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: #EC8840;
+    }
+
+    .dashboard-tips-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .dashboard-tips-list li {
+      margin-bottom: 0.8rem;
+      padding-left: 1.2rem;
+      position: relative;
+      font-size: 0.9rem;
+      color: #e0e0e0;
+    }
+
+    .dashboard-tips-list li::before {
+      content: "•";
+      color: #00ACC4;
+      font-weight: bold;
+      position: absolute;
+      left: 0;
+      font-size: 1.1rem;
+    }
+
+    .dashboard-main {
+      flex: 1; /* Take remaining space */
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      min-height: 100vh;
+      background: #ffffff;
+      margin: 0;
+      overflow-x: hidden; /* Prevent horizontal overflow */
+    }
+
+    .page-title {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: #441C5B;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+
+    .loading-overlay {
+      background: rgba(255, 255, 255, 0.98);
+      color: var(--primary);
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: none;
+      z-index: 3000;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      text-align: center;
+      padding: 2rem;
+      backdrop-filter: blur(10px);
+    }
+
+    .loading-spinner {
+      border: 3px solid rgba(0, 144, 171, 0.2);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 1.5rem;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-messages p {
+      font-size: 1.1rem;
+      margin: 0.5rem 0;
+      color: var(--accent);
+      animation: fadeInUp 0.5s ease;
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 768px) {
+      .dashboard-layout { flex-direction: column; }
+      .dashboard-sidebar { 
+        width: 100%; 
+        max-width: none; /* Allow full width on mobile */
+        min-height: auto; 
+      }
+      .dashboard-main { 
+        width: 100%; 
+        padding: 0; 
+      }
+      .page-title { 
+        font-size: 2rem; 
+        margin-bottom: 1.5rem; 
+      }
+    }
+
+    @media (max-width: 480px) {
+      .dashboard-sidebar { padding: 0.5rem; }
+      .page-title { font-size: 1.8rem; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loading-overlay">
+    <div class="loading-spinner"></div>
+    <h2 class="mb-3 text-gradient" style="color: var(--highlight);">Processing Your Request</h2>
+    <div class="loading-messages" id="loading-messages"></div>
+  </div>
+
+  <!-- Dashboard Layout: Sidebar + Main Content Block -->
+  <div class="dashboard-layout">
+    <aside class="dashboard-sidebar">
+      <div class="logo-section">
+        <img src="{{ url_for('static', filename='somelogo.jpg') }}" alt="SoME Logo" class="logo">
+      </div>
+      <div class="dashboard-sidebar-tabs">
+        <button class="dashboard-sidebar-tab active" type="button" data-section="upload"><i class="fas fa-upload"></i> Upload</button>
+        <button class="dashboard-sidebar-tab" type="button" data-section="submissions"><i class="fas fa-history"></i> My Submissions</button>
+        <button class="dashboard-sidebar-tab" type="button" data-section="analytics"><i class="fas fa-chart-line"></i> Analytics</button>
+        <button class="dashboard-sidebar-tab" type="button" data-section="profile"><i class="fas fa-user"></i> Profile</button>
+        <button class="dashboard-sidebar-tab" type="button" data-section="model-tuning"><i class="fas fa-cog"></i> Model Tuning</button>
+        <button class="dashboard-sidebar-tab" type="button" data-section="logout"><i class="fas fa-sign-out-alt"></i> Logout</button>
+      </div>
+      <div class="dashboard-tips-section">
+        <h3 class="dashboard-tips-title">Tips for Best Results</h3>
+        <ul class="dashboard-tips-list">
+          <li>Ensure good lighting & clear audio</li>
+          <li>Speak clearly at a moderate pace</li>
+          <li>Keep video between 2-5 minutes</li>
+          <li>Face the camera directly</li>
+          <li>Use professional attire</li>
+        </ul>
+      </div>
+    </aside>
+
+    <main class="dashboard-main">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer class="text-center py-3">
+    <div class="container-fluid">
+      <p style="color: var(--primary-blue);">&copy; {{ current_year if current_year else "2025" }} SOME ANALYTICS. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- Bootstrap JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

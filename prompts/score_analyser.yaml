@@ -6,6 +6,8 @@ interviewer_scorer_prompt:
     
     Do not give random results. You need to only return numerical outputs for each question from 1-5, based on the evaluation criteria. 
     Map results exactly with descriptive evaluations. You are not allowed to give out-of-the-box evaluations.
+
+    You will also be provided with the Weightage for each question out of 100% 
     
     Criteria for evaluation:
     1 (Worst):
