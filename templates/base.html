@@ -30,40 +30,47 @@
       --gradient-2: linear-gradient(45deg, #dd1a5b 0%, #ec7422 100%);
     }
     
+    * {
+      box-sizing: border-box;
+    }
+    
     body {
       background: #f8f9fa;
       color: #4a4a4a;
       font-family: 'Inter', sans-serif;
       margin: 0;
       padding: 0;
+      overflow-x: hidden;
     }
     
     .dashboard-layout {
       display: flex;
-      min-height: 100vh;
-      width: 100%;
-      margin: 0;
-      padding: 0;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
     }
 
     .dashboard-sidebar {
-      width: 35%;
+      width: 30%;
+      max-width: 350px;
+      min-width: 280px;
       background: linear-gradient(49deg, rgba(168, 85, 247, 0.3) 0%, rgba(124, 58, 237, 0.2) 24%, transparent 50%), #441c5b;
       color: #fff;
       padding: 1rem;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      margin: 0;
+      overflow-y: auto;
     }
 
     .dashboard-sidebar .logo-section {
       text-align: center;
+      margin-bottom: 1rem;
     }
 
     .dashboard-sidebar .logo {
       width: 100%;
-      max-width: 300px;
+      max-width: 200px;
       height: auto;
       margin-bottom: 0.5rem;
     }
@@ -71,26 +78,28 @@
     .dashboard-sidebar-tabs {
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
-      margin: 2rem 0;
+      gap: 0.4rem;
+      margin: 1.5rem 0;
+      flex-shrink: 0;
     }
 
     .dashboard-sidebar-tab {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
-      padding: 1.2rem 1.5rem;
-      font-size: 1.1rem;
+      gap: 0.6rem;
+      padding: 0.9rem 1.2rem;
+      font-size: 1rem;
       font-weight: 600;
       color: #fff;
       background: rgba(255,255,255,0.08);
       border: none;
-      border-radius: 10px;
+      border-radius: 8px;
       cursor: pointer;
       transition: background 0.2s, color 0.2s, box-shadow 0.2s;
       box-shadow: none;
       outline: none;
       text-align: left;
+      white-space: nowrap;
     }
 
     .dashboard-sidebar-tab:hover,
@@ -107,15 +116,16 @@
 
     .dashboard-tips-section {
       background: linear-gradient(135deg, #2a1a3a 0%, #1a1a2e 100%);
-      border-radius: 12px;
-      padding: 1.5rem;
+      border-radius: 10px;
+      padding: 1.2rem;
       margin-top: 1rem;
+      flex-shrink: 0;
     }
 
     .dashboard-tips-title {
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       font-weight: 600;
-      margin-bottom: 1rem;
+      margin-bottom: 0.8rem;
       color: #EC8840;
     }
 
@@ -126,11 +136,12 @@
     }
 
     .dashboard-tips-list li {
-      margin-bottom: 0.8rem;
-      padding-left: 1.2rem;
+      margin-bottom: 0.6rem;
+      padding-left: 1rem;
       position: relative;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       color: #e0e0e0;
+      line-height: 1.3;
     }
 
     .dashboard-tips-list li::before {
@@ -139,27 +150,26 @@
       font-weight: bold;
       position: absolute;
       left: 0;
-      font-size: 1.1rem;
+      font-size: 1rem;
     }
 
     .dashboard-main {
-      width: 65%;
+      flex: 1;
       padding: 0;
       display: flex;
       flex-direction: column;
-      align-items: stretch;
-      min-height: 100vh;
-      flex: 1 1 0%;
       background: #ffffff;
-      margin: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
     }
 
     .page-title {
-      font-size: 2.5rem;
+      font-size: 2rem;
       font-weight: 700;
       color: #441C5B;
-      margin-bottom: 2rem;
+      margin-bottom: 1.5rem;
       text-align: center;
+      padding: 1rem;
     }
 
     .loading-overlay {
@@ -184,10 +194,10 @@
       border: 3px solid rgba(0, 144, 171, 0.2);
       border-top-color: var(--primary);
       border-radius: 50%;
-      width: 50px;
-      height: 50px;
+      width: 40px;
+      height: 40px;
       animation: spin 1s linear infinite;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1rem;
     }
 
     @keyframes spin {
@@ -195,8 +205,8 @@
     }
 
     .loading-messages p {
-      font-size: 1.1rem;
-      margin: 0.5rem 0;
+      font-size: 1rem;
+      margin: 0.4rem 0;
       color: var(--accent);
       animation: fadeInUp 0.5s ease;
     }
@@ -206,16 +216,89 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
+    footer {
+      margin-top: auto;
+      padding: 1rem 0;
+      background: #fff;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1024px) {
+      .dashboard-sidebar {
+        width: 25%;
+        min-width: 250px;
+        padding: 0.8rem;
+      }
+      
+      .dashboard-sidebar .logo {
+        max-width: 150px;
+      }
+      
+      .dashboard-sidebar-tab {
+        font-size: 0.9rem;
+        padding: 0.8rem 1rem;
+      }
+    }
+
     @media (max-width: 768px) {
-      .dashboard-layout { flex-direction: column; }
-      .dashboard-sidebar { width: 100%; min-height: auto; }
-      .dashboard-main { width: 100%; padding: 0; }
-      .page-title { font-size: 2rem; margin-bottom: 1.5rem; }
+      .dashboard-layout {
+        flex-direction: column;
+        height: auto;
+        min-height: 100vh;
+      }
+      
+      .dashboard-sidebar {
+        width: 100%;
+        max-width: none;
+        min-width: auto;
+        padding: 1rem;
+        order: 2;
+      }
+      
+      .dashboard-main {
+        order: 1;
+        min-height: 60vh;
+      }
+      
+      .page-title {
+        font-size: 1.8rem;
+        margin-bottom: 1rem;
+        padding: 0.8rem;
+      }
+      
+      .dashboard-tips-section {
+        margin-top: 0.5rem;
+      }
     }
 
     @media (max-width: 480px) {
-      .dashboard-sidebar { padding: 0.5rem; }
-      .page-title { font-size: 1.8rem; }
+      .dashboard-sidebar {
+        padding: 0.8rem;
+      }
+      
+      .dashboard-sidebar-tab {
+        font-size: 0.85rem;
+        padding: 0.7rem 0.9rem;
+        gap: 0.5rem;
+      }
+      
+      .page-title {
+        font-size: 1.6rem;
+        padding: 0.5rem;
+      }
+      
+      .dashboard-tips-section {
+        padding: 1rem;
+      }
+      
+      .dashboard-tips-title {
+        font-size: 1rem;
+      }
+      
+      .dashboard-tips-list li {
+        font-size: 0.8rem;
+        margin-bottom: 0.5rem;
+      }
     }
   </style>
 </head>
@@ -231,10 +314,10 @@
   <div class="dashboard-layout">
     <aside class="dashboard-sidebar">
       <div class="logo-section">
-        <img src="{{ url_for('static', filename='somelogo.jpg') }}" alt="SoME Logo" class="logo">
+        <img src="{{ url_for('static', filename='SoME Logo.png') }}" alt="SoME Logo" class="logo">
       </div>
       <div class="dashboard-sidebar-tabs">
-        <button class="dashboard-sidebar-tab active" type="button" data-section="upload"><i class="fas fa-upload"></i> Upload</button>
+        <button class="dashboard-sidebar-tab active" type="button" data-section="upload"><i class="fas fa-upload"></i>Upload</button>
         <button class="dashboard-sidebar-tab" type="button" data-section="submissions"><i class="fas fa-history"></i> My Submissions</button>
         <button class="dashboard-sidebar-tab" type="button" data-section="analytics"><i class="fas fa-chart-line"></i> Analytics</button>
         <button class="dashboard-sidebar-tab" type="button" data-section="profile"><i class="fas fa-user"></i> Profile</button>
@@ -270,7 +353,7 @@
   <!-- Footer -->
   <footer class="text-center py-3">
     <div class="container-fluid">
-      <p style="color: var(--primary-blue);">&copy; {{ current_year if current_year else "2025" }} SOME ANALYTICS. All rights reserved.</p>
+      <p style="color: #431c5b;">&copy; {{ current_year if current_year else "2025" }} Copyright © School Of Meaningful Experiences private limited.</p>
     </div>
   </footer>
 
