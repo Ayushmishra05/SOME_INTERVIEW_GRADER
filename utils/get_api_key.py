@@ -3,7 +3,7 @@ import json
 
 
 def get_api_key():
-    client = boto3.client("secretsmanager", region_name="ap-south-1" ,aws_access_key_id="AKIAQ62SYYKO7KLJNWVK",aws_secret_access_key="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")
+    client = boto3.client("secretsmanager", region_name="ap-south-1")
 
     response = client.get_secret_value(SecretId="openai/api-key")
     api_key = response["SecretString"].split(":")[1].replace('}' , '')
@@ -15,7 +15,7 @@ def get_api_key():
 
 
 def get_groq_key():
-    client = boto3.client("secretsmanager", region_name="ap-south-1" ,aws_access_key_id="AKIAQ62SYYKO7KLJNWVK",aws_secret_access_key="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")
+    client = boto3.client("secretsmanager", region_name="ap-south-1")
 
     response = client.get_secret_value(SecretId="groq/groq-key")
     api_key = response["SecretString"].split(":")[1].replace('}' , '')

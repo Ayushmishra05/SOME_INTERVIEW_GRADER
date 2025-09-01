@@ -11,7 +11,7 @@ from LLM_Module.Qualitative_Analysis_Module import VideoResumeEvaluator2
 from report_generation_module.PDF_Generator import create_combined_pdf
 from video_module.drive_downloader import download_drive_url
 from LLM_Module.Scoring_Module import score_analyser
-from audio_module.Audio_Analysis import analyze_audio_metrics
+from audio_module.audio_analysis import analyze_audio_metrics
 import logging
 
 from utils.cleaning_script import clean_directories
