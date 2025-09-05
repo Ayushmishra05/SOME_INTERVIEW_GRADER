@@ -14,12 +14,12 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install speechRecognition
 RUN pip install mediapipe
-RUN python utils/get_api_key.py
 # Copy all source files
 COPY . .
 
 # Expose Flask port
 EXPOSE 80
+RUN python utils/get_api_key.py
 
 # Start the app
 CMD ["python", "app.py"]

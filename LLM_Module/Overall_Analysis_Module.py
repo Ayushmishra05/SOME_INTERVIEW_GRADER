@@ -11,12 +11,12 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 from groq import APIError
 from openai import RateLimitError
 from dotenv import load_dotenv
-from utils.MODEL_CONFIG import MODEL_FOR_OVERALL_ANALYSER
+from utils.MODEL_CONFIG import config
 # import boto3 
 from utils.get_api_key import get_api_key
-load_dotenv()
+load_dotenv(override=True)
 
-# api_key = os.environ['OPENAI_API_KEY']
+api_key = os.environ['OPENAI_API_KEY']
 
 
 
@@ -38,10 +38,10 @@ class VideoResumeEvaluator:
             raise ValueError("GROQ_API_KEY environment variable not set")
         with open(r'utils/openai_key.json' , 'r') as fp:
             data = json.load(fp)
-        print("Model for Overall Analyser " , MODEL_FOR_OVERALL_ANALYSER)
+        print("Model for Overall Analyser " , config.MODEL_FOR_OVERALL_ANALYSER)
         self.llm = ChatOpenAI(
-            model=MODEL_FOR_OVERALL_ANALYSER,
-            api_key=data['api_key']
+            model=config.MODEL_FOR_OVERALL_ANALYSER,
+            api_key=api_key
         )
         self.output_parser = StrOutputParser()
         self.presentation_json_path = presentation_json_path

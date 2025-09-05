@@ -33,11 +33,11 @@ get_groq_key()
 
 app = Quart(__name__)
 
-scheduler = BackgroundScheduler()
-scheduler.add_job(func=clean_directories, trigger="interval", minutes=1)
-scheduler.start()
+# scheduler = BackgroundScheduler()
+# scheduler.add_job(func=clean_directories, trigger="interval", minutes=1)
+# scheduler.start()
 
-atexit.register(lambda: scheduler.shutdown())
+# atexit.register(lambda: scheduler.shutdown())
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024
 
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "your_secret_key_here")
@@ -110,6 +110,8 @@ async def process_video(user_name: str, video_path: str, presentation_mode: str,
 
         with open(output_json_path, 'r') as f:
             data = json.load(f)
+        
+        print(data)
         data.update({'User Name': user_name, 'LLM': eval_results})
         await asyncio.to_thread(json.dump, data, open(output_json_path, 'w'), indent=4)
         logger.info(f"Updated output JSON at {output_json_path}")

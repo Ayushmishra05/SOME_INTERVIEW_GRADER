@@ -32,8 +32,8 @@ scheduler.add_job(func=clean_directories, trigger="interval", minutes=1)
 scheduler.start()
 
 atexit.register(lambda: scheduler.shutdown())
-get_groq_key()
-get_api_key()
+# get_groq_key()
+# get_api_key()
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "your_secret_key_here")
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # Increased to 200MB
 executor = ProcessPoolExecutor(max_workers=4)  # Increased to handle multiple files

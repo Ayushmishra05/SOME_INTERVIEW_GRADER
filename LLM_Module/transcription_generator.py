@@ -8,6 +8,10 @@ import asyncio
 import logging
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from groq import AsyncGroq, APIError
+from dotenv import load_dotenv 
+load_dotenv(override=True)
+
+api_key = os.environ['GROQ_API_KEY']
 
 
 
@@ -17,8 +21,10 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-with open(r'utils/groq_key.json' , 'r') as fp:
-    data = json.load(fp)
+# with open(r'utils/groq_key.json' , 'r') as fp:
+#     data = json.load(fp)
+
+
 
 class VideoTranscriber:
     def __init__(self, video_file, output_audio_path, output_json_path):
@@ -28,7 +34,7 @@ class VideoTranscriber:
         self.target_size_kb = 50000
         self.compressed_audio_path = f"audio/compressed_audio_{os.urandom(4).hex()}.mp3"
         self.client = AsyncGroq()
-        self.api_key = data['api_key']
+        self.api_key = api_key
         if not self.api_key:
             logger.error("GROQ_API_KEY environment variable not set")
             raise ValueError("GROQ_API_KEY not set")
