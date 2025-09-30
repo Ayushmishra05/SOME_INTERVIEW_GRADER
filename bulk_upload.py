@@ -1,9 +1,12 @@
-from quart import Quart, render_template, request, redirect, url_for, send_file, flash, send_from_directory
+from quart import Quart, render_template, request, redirect, url_for, send_file, flash, send_from_directory, session
 import os
 import json
 import aiohttp
 import asyncio
 from concurrent.futures import ProcessPoolExecutor
+from functools import wraps
+from dotenv import load_dotenv
+
 from LLM_Module.transcription_generator import VideoTranscriber
 from LLM_Module.Overall_Analysis_Module import VideoResumeEvaluator
 from video_module.Video_Eval import analyze_video_file
@@ -15,12 +18,16 @@ from audio_module.audio_analysis import analyze_audio_metrics
 import logging
 
 from utils.cleaning_script import clean_directories
-from utils.get_api_key import get_groq_key , get_api_key
+# from utils.get_api_key import get_groq_key , get_api_key
 
 from apscheduler.schedulers.background import BackgroundScheduler
 import atexit
 
-
+load_dotenv()
+DOMAIN_NAME = os.environ['DOMAIN_NAME']
+ADMIN_PORT = os.environ['ADMIN_PORT'] 
+USER_PORT = os.environ['USER_PORT']
+AUTH_PORT = os.environ['AUTH_PORT']
 print("RUNNING CLEANING PROCESS")
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')  # Changed to DEBUG
 logger = logging.getLogger(__name__)
@@ -32,16 +39,38 @@ scheduler.add_job(func=clean_directories, trigger="interval", minutes=1)
 scheduler.start()
 
 atexit.register(lambda: scheduler.shutdown())
-get_groq_key()
-get_api_key()
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "your_secret_key_here")
+# get_groq_key()
+# get_api_key()
+app.secret_key = os.getenv("SECRET_KEY", "your-secret-key-here")
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # Increased to 200MB
 executor = ProcessPoolExecutor(max_workers=4)  # Increased to handle multiple files
 
 for folder in ["json", "reports", os.path.join("static", "uploads"), "audio"]:
     os.makedirs(os.path.join(app.root_path, folder), exist_ok=True)
 
-async def process_video(user_name: str, video_path: str, presentation_mode: str, session, output_dir: str) -> dict:
+# Authentication decorators
+def login_required(f):
+    @wraps(f)
+    async def check_login(*args, **kwargs):
+        if 'user_id' not in session:
+            await flash("Please log in to access this page.", 'warning')
+            return redirect(f'{DOMAIN_NAME}:{AUTH_PORT}/login')
+        return await f(*args, **kwargs)
+    return check_login
+
+def admin_required(f):
+    @wraps(f)
+    async def check_admin(*args, **kwargs):
+        if 'user_id' not in session:
+            await flash("Please log in to access this page.", 'warning')
+            return redirect(f'{DOMAIN_NAME}:{AUTH_PORT}/login')
+        if session.get('role') != 'admin':
+            await flash("Admin access required.", 'error')
+            return redirect(f'{DOMAIN_NAME}:{ADMIN_PORT}')
+        return await f(*args, **kwargs)
+    return check_admin
+
+async def process_video(user_name: str, video_path: str, presentation_mode: str, http_session, output_dir: str) -> dict:
     try:
         logger.debug(f"Processing video: {video_path}, user: {user_name}, mode: {presentation_mode}")
         os.makedirs(os.path.join(app.root_path, "audio"), exist_ok=True)
@@ -101,7 +130,6 @@ async def process_video(user_name: str, video_path: str, presentation_mode: str,
         await asyncio.to_thread(json.dump, output, open(scores_json_path, 'w'), indent=4)
         logger.debug(f"Saved scores to {scores_json_path}")
 
-
         print("Printing OUTPUT JSON PATH " , output_json_path , " also printing DATA " )
         with open(output_json_path, 'r') as f:
             data = json.load(f)
@@ -127,6 +155,8 @@ async def request_entity_too_large(error):
     return redirect(url_for('index'))
 
 @app.route('/save_tuning', methods=['POST'])
+@login_required
+@admin_required
 async def save_tuning():
     try:
         data = await request.get_json()  # This is correct for Quart
@@ -153,42 +183,10 @@ async def save_tuning():
         print(f"Error in save_tuning: {str(e)}")
         return {'status': 'error', 'message': str(e)}, 500
 
-
 @app.route("/", methods=["GET", "POST"])
+@login_required
+@admin_required
 async def index():
-    # model_config = {
-    #     'qualitative': 'gpt-4',
-    #     'overall': 'gpt-4',
-    #     'score': 'gpt-4',
-    #     "p_question_1": "95",
-    #     "p_question_2": "88",
-    #     "p_question_3": "76",
-    #     "p_question_4": "92",
-    #     "p_question_5": "85",
-    #     "p_question_6": "90",
-    #     "p_question_7": "78",
-    #     "p_question_8": "84",
-    #     "p_question_9": "91",
-    #     "p_question_10": "87",
-    #     "p_question_11": "93",
-    #     "p_question_12": "89",
-    #     "p_question_13": "80",
-    #     "p_question_14": "86",
-
-    #     "v_question_1": "88",
-    #     "v_question_2": "82",
-    #     "v_question_3": "91",
-    #     "v_question_4": "85",
-    #     "v_question_5": "79",
-    #     "v_question_6": "94",
-    #     "v_question_7": "90",
-    #     "v_question_8": "87",
-    #     "v_question_9": "83",
-    #     "v_question_10": "89",
-    #     "v_question_11": "92",
-    #     "v_question_12": "86"
-    # }
-
     try:
         with open('utils/tuned.json', 'r') as f:
             data = json.load(f)
@@ -225,6 +223,7 @@ async def index():
         }
     except (FileNotFoundError, json.JSONDecodeError) as e:
         logger.error(f"Error loading tuned.json: {str(e)}")
+        model_config = {}
 
     if request.method == "POST":
         try:
@@ -247,8 +246,8 @@ async def index():
             uploads_dir = os.path.join(app.root_path, "static", "uploads")
             videos = []
 
-            
-            async with aiohttp.ClientSession() as session:
+            # Changed 'session' to 'http_session' to avoid conflict with Quart session
+            async with aiohttp.ClientSession() as http_session:
                 # Process URLs
                 for url in video_urls:
                     if url.strip():
@@ -259,7 +258,7 @@ async def index():
                             if not os.path.exists(video_path):
                                 await flash(f"Failed to download video from URL: {url}", "warning")
                                 continue
-                            video_data = await process_video(user_name, video_path, presentation_mode, session, uploads_dir)
+                            video_data = await process_video(user_name, video_path, presentation_mode, http_session, uploads_dir)
                             videos.append(video_data)
                         except Exception as e:
                             logger.error(f"Error processing URL {url}: {str(e)}")
@@ -274,7 +273,7 @@ async def index():
                             video_path = os.path.join(uploads_dir, video_filename)
                             await video_file.save(video_path)
                             logger.debug(f"Saved file {original_filename} as {video_filename}, size: {os.path.getsize(video_path)} bytes")
-                            video_data = await process_video(user_name, video_path, presentation_mode, session, uploads_dir)
+                            video_data = await process_video(user_name, video_path, presentation_mode, http_session, uploads_dir)
                             videos.append(video_data)
                         except Exception as e:
                             logger.error(f"Error processing file {original_filename}: {str(e)}")
@@ -295,17 +294,42 @@ async def index():
             await flash(f"Server error: {str(e)}", "danger")
             return redirect(request.url)
 
-    return await render_template("multi-index.html" , model_config=model_config)
+    return await render_template("multi-index.html", 
+                                model_config=model_config,
+                                user_name=session.get('name', 'Admin'),
+                                email=session.get('email'))
+
+@app.route('/users')
+@login_required
+@admin_required
+async def manage_users():
+    return await render_template('manage_users.html')
+
+@app.route('/settings')
+@login_required
+@admin_required
+async def admin_settings():
+    return await render_template('admin_settings.html')
 
 @app.route('/uploads/<filename>')
+@login_required
+@admin_required
 async def uploaded_file(filename):
     uploads = os.path.join(app.root_path, "static", "uploads")
     return await send_from_directory(uploads, filename)
 
 @app.route("/download_pdf/<filename>")
+@login_required
+@admin_required
 async def download_pdf(filename):
     pdf_path = os.path.join(app.root_path, "reports", filename)
     return await send_file(pdf_path, as_attachment=True, attachment_filename=f"evaluation_report_{filename}")
+
+@app.route('/admin_logout')
+async def admin_logout():
+    session.clear()
+    await flash("You have been logged out successfully.", 'info')
+    return redirect(f'{DOMAIN_NAME}:{AUTH_PORT}/login')
 
 @app.before_serving
 async def startup():
@@ -316,5 +340,6 @@ async def shutdown():
     executor.shutdown()
     logger.info("Shutting down application and process pool")
 
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=8051)
+# if __name__ == "__main__":
+#    app.run(host='0.0.0.0', port=8051)
+

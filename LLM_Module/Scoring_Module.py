@@ -11,12 +11,12 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 from groq import APIError
 from openai import RateLimitError
 from dotenv import load_dotenv 
-from utils.MODEL_CONFIG import * 
+from utils.MODEL_CONFIG import config
 from utils.get_api_key import get_api_key
 
-load_dotenv()
+load_dotenv(override=True)
 
-# api_key = os.environ['OPENAI_API_KEY']
+api_key = os.environ['OPENAI_API_KEY']
 # Configure logging
 
 
@@ -43,10 +43,10 @@ async def score_analyser(
         raise ValueError("GROQ_API_KEY not set")
     with open(r'utils/openai_key.json' , 'r') as fp:
         data = json.load(fp)
-    print("Model for Score Analyser " , MODEL_FOR_SCORE_ANALYSER)
+    print("Model for Score Analyser " , config.MODEL_FOR_SCORE_ANALYSER)
     model = ChatOpenAI(
-        model=MODEL_FOR_SCORE_ANALYSER,
-        api_key=data['api_key']
+        model=config.MODEL_FOR_SCORE_ANALYSER,
+        api_key=api_key
     )
     output_parser = JsonOutputParser()
     
@@ -114,35 +114,35 @@ async def score_analyser(
     
     if presentation_mode == "on":
         questions = f"""
-            "Did the Speaker Speak with Confidence ? (Weightage {P_QUESTION_1}%)", 
-            "Did the speaker vary their tone, speed, volume while delivering the speech/presentation? (Weightage {P_QUESTION_2}%)",
-            "Did they use any gestures with their hands or body while speaking? (Weightage {P_QUESTION_3}%)" , 
-            "Did they have expressions on their faces? (Weightage {P_QUESTION_4}%)",
-            "Did the speech have a structure of Opening, Body and Conclusion? (Weightage {P_QUESTION_5}%)",
-            "Did the speaker keep the presentation engaging by adding relevant examples, anecdotes and data to back their content?  (Weightage {P_QUESTION_6}%)", 
-            "Was the overall “Objective” of the speech delivered clearly? (Weightage {P_QUESTION_7}%)", 
-            "Was the content of the presentation/speech to the point, or did it include unnecessary details that may have distracted or confused the audience? (Weightage {P_QUESTION_8}%)", 
-            "Was the content of the presentation/speech relevant to the objective of the presentation? (Weightage {P_QUESTION_9}%)",
-            "Was the content of the presentation/speech clear and easy to understand? (Weightage {P_QUESTION_10}%)", 
-            "Did the speaker demonstrate credibility? Will you trust the speaker? (Weightage {P_QUESTION_11}%)", 
-            "Did the speaker explain how the speech or topic of the presentation would benefit the audience and what they could gain from it? (Weightage {P_QUESTION_12}%)", 
-            "Did the speaker make an emotional connection with the audience ? (Weightage {P_QUESTION_13}%)", 
-            "Overall, were you convinced/ persuaded with the speaker’s view on the topic? (Weightage {P_QUESTION_14}%)"
+            "Did the Speaker Speak with Confidence ? (Weightage {config.P_QUESTION_1}%)", 
+            "Did the speaker vary their tone, speed, volume while delivering the speech/presentation? (Weightage {config.P_QUESTION_2}%)",
+            "Did they use any gestures with their hands or body while speaking? (Weightage {config.P_QUESTION_3}%)" , 
+            "Did they have expressions on their faces? (Weightage {config.P_QUESTION_4}%)",
+            "Did the speech have a structure of Opening, Body and Conclusion? (Weightage {config.P_QUESTION_5}%)",
+            "Did the speaker keep the presentation engaging by adding relevant examples, anecdotes and data to back their content?  (Weightage {config.P_QUESTION_6}%)", 
+            "Was the overall “Objective” of the speech delivered clearly? (Weightage {config.P_QUESTION_7}%)", 
+            "Was the content of the presentation/speech to the point, or did it include unnecessary details that may have distracted or confused the audience? (Weightage {config.P_QUESTION_8}%)", 
+            "Was the content of the presentation/speech relevant to the objective of the presentation? (Weightage {config.P_QUESTION_9}%)",
+            "Was the content of the presentation/speech clear and easy to understand? (Weightage {config.P_QUESTION_10}%)", 
+            "Did the speaker demonstrate credibility? Will you trust the speaker? (Weightage {config.P_QUESTION_11}%)", 
+            "Did the speaker explain how the speech or topic of the presentation would benefit the audience and what they could gain from it? (Weightage {config.P_QUESTION_12}%)", 
+            "Did the speaker make an emotional connection with the audience ? (Weightage {config.P_QUESTION_13}%)", 
+            "Overall, were you convinced/ persuaded with the speaker’s view on the topic? (Weightage {config.P_QUESTION_14}%)"
         """
     else:
         questions = f"""
-            "Did the Speaker Speak with Confidence ? (Weightage {V_QUESTION_1}%)", 
-            "Did the speaker vary their tone, speed, volume? (Weightage {V_QUESTION_2}%)",
-            "Did they use any gestures with their hands or body while speaking? (Weightage {V_QUESTION_3}%)",
-            "Did they have expressions on their faces? (Weightage {V_QUESTION_4}%)",
-            "Who are you and what are your skills, expertise, personality traits ? (Weightage {V_QUESTION_5}%)",
-            "Why are you the best person to fit this role? (Weightage {V_QUESTION_6}%)",
-            "How are you different from others? (Weightage {V_QUESTION_7}%)",
-            "What value do you bring to the role? (Weightage {V_QUESTION_8}%)", 
-            "Did the speech have a structure of Opening, Body and Conclusion? (Weightage {V_QUESTION_9}%)",
-            "How was the quality of research for the topic? Did the student’s speech demonstrate a good depth? Did they cite the sources of research properly? (Weightage {V_QUESTION_10}%)", 
-            "How creatively did the student present the video? (Weightage {V_QUESTION_11}%)", 
-            "How convinced were you with the overall speech on the topic? Was it persuasive? Will you give them the job/opportunity? (Weightage {V_QUESTION_12}%)"
+            "Did the Speaker Speak with Confidence ? (Weightage {config.V_QUESTION_1}%)", 
+            "Did the speaker vary their tone, speed, volume? (Weightage {config.V_QUESTION_2}%)",
+            "Did they use any gestures with their hands or body while speaking? (Weightage {config.V_QUESTION_3}%)",
+            "Did they have expressions on their faces? (Weightage {config.V_QUESTION_4}%)",
+            "Who are you and what are your skills, expertise, personality traits ? (Weightage {config.V_QUESTION_5}%)",
+            "Why are you the best person to fit this role? (Weightage {config.V_QUESTION_6}%)",
+            "How are you different from others? (Weightage {config.V_QUESTION_7}%)",
+            "What value do you bring to the role? (Weightage {config.V_QUESTION_8}%)", 
+            "Did the speech have a structure of Opening, Body and Conclusion? (Weightage {config.V_QUESTION_9}%)",
+            "How was the quality of research for the topic? Did the student’s speech demonstrate a good depth? Did they cite the sources of research properly? (Weightage {config.V_QUESTION_10}%)", 
+            "How creatively did the student present the video? (Weightage {config.V_QUESTION_11}%)", 
+            "How convinced were you with the overall speech on the topic? Was it persuasive? Will you give them the job/opportunity? (Weightage {config.V_QUESTION_12}%)"
         """
     
     try:

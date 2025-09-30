@@ -162,7 +162,7 @@
           </div>
           <div class="form-group" id="youtubeSection">
             <label for="videoUrl" class="form-label">Video URL</label>
-            <input type="url" id="videoUrl" name="videoUrl" class="form-input" placeholder="Paste Google Drive or YouTube URL" required>
+            <input type="url" id="videoUrl" name="videoUrl" class="form-input" placeholder="Paste Google Drive URL" required>
             <input type="hidden" name="youtube_url" id="youtube_url">
           </div>
           <div class="form-group d-none" id="fileSection">
@@ -279,7 +279,7 @@
         if (!this.value || isValidVideoURL(this.value)) {
           this.setCustomValidity('');
         } else {
-          this.setCustomValidity('Please enter a valid YouTube or Google Drive video link.');
+          this.setCustomValidity('Please enter a valid Google Drive video link.');
         }
       });
 

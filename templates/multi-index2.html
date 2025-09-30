@@ -1,0 +1,830 @@
+{% extends "multi-base2.html" %}
+
+{% block content %}
+  <style>
+    .main-content {
+      padding: 1rem 0.5rem;
+      height: 100%;
+      overflow-y: auto;
+      max-width: 95vw;
+    }
+
+    .upload-card {
+      max-width: 100%;
+      width: 100%;
+      margin: 0 auto;
+      padding: 1.5rem 1rem;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      flex: 1 1 0%;
+      background: transparent;
+    }
+
+    .form-group {
+      margin-bottom: 1.2rem;
+    }
+
+    .form-label {
+      display: block;
+      font-weight: 600;
+      color: #441C5B;
+      margin-bottom: 0.4rem;
+      font-size: 0.9rem;
+    }
+
+    .form-input, .form-select {
+      width: 100%;
+      max-width: 100%;
+      padding: 10px 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      transition: border-color 0.3s ease;
+      box-sizing: border-box;
+    }
+
+    .form-input:focus, .form-select:focus {
+      outline: none;
+      border-color: #441C5B;
+      box-shadow: 0 0 0 2px rgba(68, 28, 91, 0.1);
+    }
+
+    .form-input[type="file"] {
+      padding: 8px 12px;
+    }
+
+    .video-type-section, .mode-toggle-section {
+      margin-bottom: 1.2rem;
+    }
+
+    .video-type-buttons, .mode-toggle-buttons {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.4rem;
+    }
+
+    .video-type-btn, .mode-toggle-btn {
+      flex: 1;
+      padding: 10px 15px;
+      border: 2px solid #e0e0e0;
+      background: #fff;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 0.85rem;
+      transition: all 0.3s ease;
+      font-family: inherit;
+      white-space: nowrap;
+    }
+
+    .video-type-btn:hover, .mode-toggle-btn:hover {
+      border-color: #441C5B;
+      background: rgba(68,28,91,0.05);
+    }
+
+    .video-type-btn.selected, .mode-toggle-btn.selected {
+      background: var(--highlight);
+      color: #fff;
+      border-color: var(--highlight);
+    }
+
+    .upload-btn, .save-tuning-btn {
+      width: 100%;
+      max-width: 100%;
+      padding: 14px 18px;
+      background: var(--highlight);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      font-family: inherit;
+    }
+
+    .upload-btn:hover, .save-tuning-btn:hover {
+      background: #d17a35;
+      transform: translateY(-1px);
+      box-shadow: 0 3px 10px rgba(236, 136, 64, 0.3);
+    }
+
+    .submissions-table-wrapper {
+      overflow-x: auto;
+      width: 100%;
+      flex: 1 1 0%;
+      min-height: 0;
+      margin: 0 -0.5rem;
+    }
+
+    .submissions-table {
+      width: 100%;
+      min-width: 650px;
+      border-collapse: separate;
+      border-spacing: 0 0.6rem;
+      font-size: 0.8rem;
+      table-layout: fixed;
+      background: none;
+    }
+
+    .submissions-table th, .submissions-table td {
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      color: #2a1a3a;
+      background: #f8f6fa;
+      font-weight: 600;
+      height: 45px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      border: none;
+    }
+
+    .submissions-table th {
+      background: #f3f0fa;
+      color: #2a1a3a;
+      font-size: 0.75rem;
+      letter-spacing: 0.01em;
+      font-weight: 700;
+    }
+
+    .submissions-table td {
+      font-weight: 500;
+      background: #fff;
+    }
+
+    .submissions-table tr {
+      border-radius: 6px;
+      box-shadow: 0 1px 6px 0 rgba(68, 28, 91, 0.04);
+    }
+
+    .submissions-table td:nth-child(1) { width: 20%; }
+    .submissions-table td:nth-child(2) { width: 50%; }
+    .submissions-table td:nth-child(3) { width: 30%; }
+
+    .report-btn {
+      background: #2a1a3a;
+      color: #fff;
+      border: none;
+      border-radius: 0.6em;
+      padding: 0.4em 0.7em;
+      font-weight: 700;
+      font-size: 0.7rem;
+      cursor: pointer;
+      transition: background 0.2s;
+      text-decoration: none;
+      display: inline-block;
+      box-shadow: 0 1px 6px 0 rgba(68, 28, 91, 0.08);
+    }
+
+    .report-btn:hover:not(.disabled) {
+      background: var(--highlight);
+      color: #fff;
+    }
+
+    .flash-message {
+      padding: 0.7rem;
+      margin-bottom: 0.8rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      text-align: center;
+    }
+
+    .flash-message.success { background: #e6fbe6; color: #1a7f37; }
+    .flash-message.warning { background: #fffbe6; color: #bfa100; }
+    .flash-message.danger { background: #fde6e0; color: #d32f2f; }
+
+    .file-list {
+      margin-top: 0.4rem;
+      font-size: 0.8rem;
+      color: #441C5B;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+
+    .file-list:empty::before {
+      content: "No files selected";
+      color: #888;
+    }
+
+    .question-group {
+      margin-bottom: 1rem;
+    }
+
+    .question-label {
+      font-weight: 500;
+      color: #441C5B;
+      margin-bottom: 0.4rem;
+      display: block;
+      font-size: 0.85rem;
+      line-height: 1.3;
+    }
+
+    .progress-container {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      position: relative;
+    }
+
+    .progress-bar {
+      flex: 1;
+      height: 6px;
+      background: #e0e0e0;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--highlight);
+      transition: width 0.3s ease;
+    }
+
+    .progress-value {
+      width: 50px;
+      text-align: right;
+      font-size: 0.8rem;
+      color: #441C5B;
+      flex-shrink: 0;
+    }
+
+    .slider {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      background: #e0e0e0;
+      border-radius: 3px;
+      outline: none;
+      transition: background 0.3s ease;
+    }
+
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      background: var(--highlight);
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid #fff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    .slider::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      background: var(--highlight);
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid #fff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    .slider:hover {
+      background: #d0d0d0;
+    }
+
+    #clearFiles {
+      margin-top: 0.4rem;
+      padding: 6px 12px;
+      background: #d32f2f;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+
+    .questions-section h3 {
+      font-size: 1.1rem;
+      color: #441C5B;
+      margin-bottom: 1rem;
+      border-bottom: 2px solid #e0e0e0;
+      padding-bottom: 0.5rem;
+    }
+
+    @media (max-width: 1200px) {
+      .main-content { padding: 0.8rem 0.4rem; }
+      .upload-card { padding: 1.2rem 0.8rem; }
+      .submissions-table { min-width: 600px; }
+      .form-input, .form-select { padding: 8px 10px; }
+    }
+
+    @media (max-width: 768px) {
+      .main-content { padding: 0.5rem 0.2rem; }
+      .upload-card { padding: 1rem 0.6rem; }
+      .form-group { margin-bottom: 1rem; }
+      .video-type-buttons, .mode-toggle-buttons { gap: 0.3rem; }
+      .video-type-btn, .mode-toggle-btn {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+      }
+      .upload-btn, .save-tuning-btn {
+        padding: 12px 16px;
+        font-size: 0.95rem;
+      }
+
+      .submissions-table { min-width: 550px; font-size: 0.75rem; }
+      .submissions-table th, .submissions-table td {
+        padding: 0.4rem 0.5rem;
+        height: 40px;
+      }
+      .submissions-table td:nth-child(2) { max-width: 100px; }
+      .question-label { font-size: 0.8rem; }
+      .progress-value { font-size: 0.75rem; width: 45px; }
+    }
+
+    @media (max-width: 600px) {
+      .main-content { padding: 0.3rem 0.1rem; }
+      .upload-card { padding: 0.8rem 0.4rem; }
+      .form-input, .form-select { padding: 6px 8px; font-size: 0.85rem; }
+      .video-type-buttons, .mode-toggle-buttons { flex-direction: column; }
+      .video-type-btn, .mode-toggle-btn {
+        padding: 6px 10px;
+        font-size: 0.75rem;
+      }
+      .upload-btn, .save-tuning-btn {
+        padding: 10px 14px;
+        font-size: 0.9rem;
+      }
+
+      .submissions-table { min-width: 480px; font-size: 0.7rem; }
+      .submissions-table th, .submissions-table td {
+        padding: 0.3rem 0.4rem;
+        height: 36px;
+      }
+      .submissions-table td:nth-child(2) { max-width: 80px; }
+      .report-btn {
+        font-size: 0.65rem;
+        padding: 0.15em 0.5em;
+      }
+
+      .question-group { margin-bottom: 0.8rem; }
+      .question-label { font-size: 0.75rem; }
+      .progress-container { gap: 0.6rem; }
+      .progress-value { font-size: 0.7rem; width: 40px; }
+      .slider { height: 5px; }
+      .slider::-webkit-slider-thumb { width: 14px; height: 14px; }
+      .slider::-moz-range-thumb { width: 14px; height: 14px; }
+    }
+
+    @media (max-width: 480px) {
+      .submissions-table { min-width: 420px; }
+      .submissions-table-wrapper { margin: 0 -0.3rem; }
+      .questions-section h3 { font-size: 1rem; }
+      .upload-card { padding: 0.6rem 0.3rem; }
+    }
+  </style>
+
+  <div class="main-content">
+    <h1 class="page-title">SoME AI Video Analysis & Feedback Tool</h1>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash-message {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div id="upload-section" class="tab-section active">
+      <div class="upload-card">
+        <form id="videoAnalysisForm" method="POST" enctype="multipart/form-data" action="{{ url_for('admin.index') }}">
+          <div class="form-group">
+            <label for="name" class="form-label">Name</label>
+            <input type="text" id="name" name="user_name" class="form-input" placeholder="Enter your name" value="{{ user_name }}" required>
+          </div>
+
+          <div class="form-group video-type-section">
+            <label class="form-label">Select Video Type:</label>
+            <div class="video-type-buttons">
+              <button type="button" class="video-type-btn selected" data-type="on">Speech/Presentation</button>
+              <button type="button" class="video-type-btn" data-type="off">Video Resume</button>
+            </div>
+            <input type="hidden" id="presentationModeInput" name="presentation_mode" value="on">
+          </div>
+
+          <div class="form-group" id="urlSection">
+            <label for="videoUrls" class="form-label">Video URLs (one per line, Google Drive Sharable Links)</label>
+            <textarea id="videoUrls" name="videoUrls" class="form-input" placeholder="Paste Google Drive Links one per line" rows="3"></textarea>
+          </div>
+
+          <div class="form-group" id="fileSection">
+            <label for="video_files" class="form-label">Upload Videos (Hold Ctrl/Shift or drag-and-drop to select multiple files, max 600MB each)</label>
+            <input type="file" id="video_files" name="video_files[]" class="form-input" accept="video/*" multiple>
+            <div class="file-list" id="fileList"></div>
+            <button type="button" id="clearFiles">Clear Files</button>
+          </div>
+
+          <button type="submit" class="upload-btn">
+            <i class="fas fa-arrow-up"></i>
+            Start Analysis
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div id="submissions-section" class="tab-section" style="display:none;">
+      <div class="upload-card">
+        <h2>My Submissions</h2>
+        <p>Complete history of your video resume uploads and analysis</p>
+        <div class="submissions-table-wrapper">
+          <table class="submissions-table">
+            <thead>
+              <tr>
+                <th>User Name</th>
+                <th>File Name</th>
+                <th>Upload Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="submissions-tbody">
+              {% if submissions %}
+                {% for sub in submissions %}
+                  <tr>
+                    <td>{{ sub.user_name }}</td>
+                    <td>{{ sub.pdf_filename }}</td>
+                    <td>{{ sub.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    <td><a href="{{ url_for('download_pdf', filename=sub.pdf_filename) }}" class="report-btn" download>View Report</a></td>
+                  </tr>
+                {% endfor %}
+              {% else %}
+                <tr><td colspan="4" style="text-align:center;">No submissions available.</td></tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="profile-section" class="tab-section" style="display:none;">
+      <div class="upload-card">
+        <h2>Manage Users</h2>
+        <p>This section will show and allow editing of user information.</p>
+        <a class="btn btn-primary">Go to User Management</a>
+      </div>
+    </div>
+
+    <div id="model-tuning-section" class="tab-section" style="display:none;">
+      <div class="upload-card">
+        <h2>Model Tuning</h2>
+        <p>Configure model parameters and question weightages for video analysis.</p>
+        <form id="modelTuningForm" action="{{ url_for('admin.save_tuning') }}">
+          <div class="form-group mode-toggle-section">
+            <label class="form-label">Select Mode:</label>
+            <div class="mode-toggle-buttons">
+              <button type="button" class="mode-toggle-btn selected" data-mode="presentation">Presentation Mode</button>
+              <button type="button" class="mode-toggle-btn" data-mode="video_resume">Video Resume Mode</button>
+            </div>
+            <input type="hidden" id="tuningModeInput" name="tuning_mode" value="presentation">
+          </div>
+
+          <div class="form-group">
+            <label for="score_model" class="form-label">Score Model</label>
+            <select id="score_model" name="score_model" class="form-select" required>
+              <option value="gpt-4" {% if model_config.score == 'gpt-4' %}selected{% endif %}>gpt-4</option>
+              <option value="gpt-4-turbo" {% if model_config.score == 'gpt-4-turbo' %}selected{% endif %}>gpt-4-turbo</option>
+              <option value="gpt-3.5-turbo" {% if model_config.score == 'gpt-3.5-turbo' %}selected{% endif %}>gpt-3.5-turbo</option>
+              <option value="gpt-4.1" {% if model_config.score == 'gpt-4.1' %}selected{% endif %}>gpt-4.1</option>
+              <option value="gpt-4.1-mini" {% if model_config.score == 'gpt-4.1-mini' %}selected{% endif %}>gpt-4.1-mini</option>
+              <option value="gpt-4o" {% if model_config.score == 'gpt-4o' %}selected{% endif %}>gpt-4o</option>
+              <option value="gpt-4o-mini" {% if model_config.score == 'gpt-4o-mini' %}selected{% endif %}>gpt-4o-mini</option>
+            </select>
+            <small style="color: #441C5B; margin-top: 0.4rem; display: block; font-size: 0.8rem;">
+              Currently using: <strong>{{ model_config.score }}</strong>
+            </small>
+          </div>
+
+          <div class="form-group">
+            <label for="overall_analysis_model" class="form-label">Overall Analysis Model</label>
+            <select id="overall_analysis_model" name="overall_analysis_model" class="form-select" required>
+              <option value="gpt-4" {% if model_config.overall == 'gpt-4' %}selected{% endif %}>gpt-4</option>
+              <option value="gpt-4-turbo" {% if model_config.overall == 'gpt-4-turbo' %}selected{% endif %}>gpt-4-turbo</option>
+              <option value="gpt-3.5-turbo" {% if model_config.overall == 'gpt-3.5-turbo' %}selected{% endif %}>gpt-3.5-turbo</option>
+              <option value="gpt-4.1" {% if model_config.overall == 'gpt-4.1' %}selected{% endif %}>gpt-4.1</option>
+              <option value="gpt-4.1-mini" {% if model_config.overall == 'gpt-4.1-mini' %}selected{% endif %}>gpt-4.1-mini</option>
+              <option value="gpt-4o" {% if model_config.overall == 'gpt-4o' %}selected{% endif %}>gpt-4o</option>
+              <option value="gpt-4o-mini" {% if model_config.overall == 'gpt-4o-mini' %}selected{% endif %}>gpt-4o-mini</option>
+            </select>
+            <small style="color: #441C5B; margin-top: 0.4rem; display: block; font-size: 0.8rem;">
+              Currently using: <strong>{{ model_config.overall }}</strong>
+            </small>
+          </div>
+
+          <div class="form-group">
+            <label for="qualitative_analysis_model" class="form-label">Qualitative Analysis Model</label>
+            <select id="qualitative_analysis_model" name="qualitative_analysis_model" class="form-select" required>
+              <option value="gpt-4" {% if model_config.qualitative == 'gpt-4' %}selected{% endif %}>gpt-4</option>
+              <option value="gpt-4-turbo" {% if model_config.qualitative == 'gpt-4-turbo' %}selected{% endif %}>gpt-4-turbo</option>
+              <option value="gpt-3.5-turbo" {% if model_config.qualitative == 'gpt-3.5-turbo' %}selected{% endif %}>gpt-3.5-turbo</option>
+              <option value="gpt-4.1" {% if model_config.qualitative == 'gpt-4.1' %}selected{% endif %}>gpt-4.1</option>
+              <option value="gpt-4.1-mini" {% if model_config.qualitative == 'gpt-4.1-mini' %}selected{% endif %}>gpt-4.1-mini</option>
+              <option value="gpt-4o" {% if model_config.qualitative == 'gpt-4o' %}selected{% endif %}>gpt-4o</option>
+              <option value="gpt-4o-mini" {% if model_config.qualitative == 'gpt-4o-mini' %}selected{% endif %}>gpt-4o-mini</option>
+            </select>
+            <small style="color: #441C5B; margin-top: 0.4rem; display: block; font-size: 0.8rem;">
+              Currently using: <strong>{{ model_config.qualitative }}</strong>
+            </small>
+          </div>
+
+          <div id="presentation-questions" class="questions-section">
+            <h3>Presentation Mode Questions</h3>
+            {% set presentation_questions = [
+              ('p_question_1', 'Did the Speaker Speak With Confidence ?', model_config.p_question_1),
+              ('p_question_2', 'Did the speaker vary their tone, speed, volume while delivering the speech/presentation?', model_config.p_question_2),
+              ('p_question_3', 'Did they use any gestures with their hands or body while speaking?', model_config.p_question_3),
+              ('p_question_4', 'Did they have expressions on their faces? ', model_config.p_question_4),
+              ('p_question_5', 'Did the speech have a structure of Opening, Body and Conclusion?', model_config.p_question_5),
+              ('p_question_6', 'Did the speaker keep the presentation engaging by adding relevant examples, anecdotes and data to back their content?', model_config.p_question_6),
+              ('p_question_7', 'Was the overall "Objective" of the speech delivered clearly?', model_config.p_question_7),
+              ('p_question_8', 'Was the content of the presentation/speech to the point, or did it include unnecessary details that may have distracted or confused the audience?', model_config.p_question_8),
+              ('p_question_9', 'Was the content of the presentation/speech relevant to the objective of the presentation?', model_config.p_question_9),
+              ('p_question_10', 'Was the content of the presentation/speech clear and easy to understand?', model_config.p_question_10),
+              ('p_question_11', 'Did the speaker demonstrate credibility? Will you trust the speaker?', model_config.p_question_11),
+              ('p_question_12', 'Did the speaker explain how the speech or topic of the presentation would benefit the audience and what they could gain from it?', model_config.p_question_12),
+              ('p_question_13', 'Did the speaker make an emotional connection with the audience ?', model_config.p_question_13),
+              ('p_question_14', 'Overall, were you convinced/ persuaded with the speaker\'s view on the topic?', model_config.p_question_14)
+            ] %}
+            {% for name, label, value in presentation_questions %}
+            <div class="question-group">
+              <label class="question-label">{{ label }} Weightage</label>
+              <div class="progress-container">
+                <div class="progress-bar">
+                  <div class="progress-bar-fill" style="width: {{ value }}%;"></div>
+                </div>
+                <input type="range" name="{{ name }}" class="slider" value="{{ value }}" min="1" max="100" required>
+                <span class="progress-value">{{ value }}</span>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          <div id="video-resume-questions" class="questions-section" style="display:none;">
+            <h3>Video Resume Mode Questions</h3>
+            {% set video_resume_questions = [
+              ('v_question_1', 'Did the Speaker Speak with Confidence ?', model_config.v_question_1),
+              ('v_question_2', 'Did the speaker vary their tone, speed, volume?', model_config.v_question_2),
+              ('v_question_3', 'Did they use any gestures with their hands or body while speaking? ', model_config.v_question_3),
+              ('v_question_4', 'Did they have expressions on their faces?', model_config.v_question_4),
+              ('v_question_5', 'Who are you and what are your skills, expertise, personality traits ?', model_config.v_question_5),
+              ('v_question_6', 'Why are you the best person to fit this role?', model_config.v_question_6),
+              ('v_question_7', 'How are you different from others?', model_config.v_question_7),
+              ('v_question_8', 'What value do you bring to the role?', model_config.v_question_8),
+              ('v_question_9', 'Did the speech have a structure of Opening, Body and Conclusion?', model_config.v_question_9),
+              ('v_question_10', 'How was the quality of research for the topic? Did the students speech demonstrate a good depth? Did they cite the sources of research properly?', model_config.v_question_10),
+              ('v_question_11', 'How creatively did the student present the video?', model_config.v_question_11),
+              ('v_question_12', 'How convinced were you with the overall speech on the topic?', model_config.v_question_12)
+            ] %}
+            {% for name, label, value in video_resume_questions %}
+            <div class="question-group">
+              <label class="question-label">{{ label }} Weightage</label>
+              <div class="progress-container">
+                <div class="progress-bar">
+                  <div class="progress-bar-fill" style="width: {{ value }}%;"></div>
+                </div>
+                <input type="range" name="{{ name }}" class="slider" value="{{ value }}" min="1" max="100" required>
+                <span class="progress-value">{{ value }}</span>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          <button type="submit" class="save-tuning-btn">
+            <i class="fas fa-save"></i>
+            Save Tuning
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('DOM fully loaded');
+
+      const form = document.getElementById('videoAnalysisForm');
+      const videoTypeButtons = document.querySelectorAll('.video-type-btn');
+      const tabs = document.querySelectorAll('.dashboard-sidebar-tab');
+      const sections = document.querySelectorAll('.tab-section');
+      const fileInput = document.getElementById('video_files');
+      const fileList = document.getElementById('fileList');
+      const clearFilesBtn = document.getElementById('clearFiles');
+      const tuningForm = document.getElementById('modelTuningForm');
+      const modeToggleButtons = document.querySelectorAll('.mode-toggle-btn');
+      const tuningModeInput = document.getElementById('tuningModeInput');
+      const presentationQuestions = document.getElementById('presentation-questions');
+      const videoResumeQuestions = document.getElementById('video-resume-questions');
+
+      console.log('Found tabs:', tabs.length, Array.from(tabs).map(t => t.dataset.section));
+
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          if (tab.classList.contains('disabled')) return;
+          console.log('Tab clicked:', tab.dataset.section);
+          tabs.forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          sections.forEach(sec => {
+            if (sec.id === `${tab.dataset.section}-section`) {
+              console.log('Showing section:', sec.id);
+              sec.classList.add('active');
+              sec.style.display = 'block';
+            } else {
+              console.log('Hiding section:', sec.id);
+              sec.classList.remove('active');
+              sec.style.display = 'none';
+            }
+          });
+        });
+      });
+
+      videoTypeButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          videoTypeButtons.forEach(b => b.classList.remove('selected'));
+          button.classList.add('selected');
+          document.getElementById('presentationModeInput').value = button.dataset.type;
+        });
+      });
+
+      modeToggleButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          modeToggleButtons.forEach(b => b.classList.remove('selected'));
+          button.classList.add('selected');
+          tuningModeInput.value = button.dataset.mode;
+          if (button.dataset.mode === 'presentation') {
+            presentationQuestions.style.display = 'block';
+            videoResumeQuestions.style.display = 'none';
+          } else {
+            presentationQuestions.style.display = 'none';
+            videoResumeQuestions.style.display = 'block';
+          }
+        });
+      });
+
+      document.querySelectorAll('.slider').forEach(slider => {
+        const updateProgress = () => {
+          const value = Math.min(Math.max(parseInt(slider.value) || 1, 1), 100);
+          const progressBarFill = slider.parentElement.querySelector('.progress-bar-fill');
+          const progressValue = slider.parentElement.querySelector('.progress-value');
+          progressBarFill.style.width = `${value}%`;
+          progressValue.textContent = value;
+        };
+        slider.addEventListener('input', updateProgress);
+        updateProgress();
+      });
+
+      fileInput.addEventListener('change', () => {
+        fileList.innerHTML = '';
+        const files = fileInput.files;
+        console.log('Selected files:', Array.from(files).map(f => ({ name: f.name, size: f.size })));
+        if (files.length === 0) {
+          fileList.innerHTML = '<span>No files selected</span>';
+        } else {
+          Array.from(files).forEach(file => {
+            const fileItem = document.createElement('div');
+            fileItem.textContent = `${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+            fileList.appendChild(fileItem);
+          });
+        }
+      });
+
+      clearFilesBtn.addEventListener('click', () => {
+        fileInput.value = '';
+        fileList.innerHTML = '<span>No files selected</span>';
+        console.log('Files cleared');
+      });
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const submitBtn = form.querySelector('.upload-btn');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting Analysis...';
+        submitBtn.disabled = true;
+
+        const nameInput = document.getElementById('name');
+        const videoUrls = document.getElementById('videoUrls').value.trim();
+        const videoFiles = document.getElementById('video_files').files;
+
+        if (!nameInput.value.trim()) {
+          alert('Please enter a valid name.');
+          submitBtn.innerHTML = originalText;
+          submitBtn.disabled = false;
+          return;
+        }
+
+        if (!videoUrls && videoFiles.length === 0) {
+          alert('Please provide at least one video URL or file.');
+          submitBtn.innerHTML = originalText;
+          submitBtn.disabled = false;
+          return;
+        }
+
+        for (let file of videoFiles) {
+          if (file.size > 200 * 1024 * 1024) {
+            alert(`File ${file.name} is too large. Maximum size is 200MB per file.`);
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+            return;
+          }
+        }
+
+        try {
+          const formData = new FormData(form);
+          console.log('Form data:', Array.from(formData.entries()).map(([key, value]) => ({ key, value: value instanceof File ? value.name : value })));
+          const response = await fetch('{{ url_for('admin.index') }}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+              'Accept': '*/*'
+            }
+          });
+
+          if (response.ok) {
+            const html = await response.text();
+            document.documentElement.innerHTML = html;
+          } else {
+            const errorText = await response.text();
+            console.error('Server error:', errorText, 'Status:', response.status);
+            alert(`Analysis failed: Server responded with status ${response.status}. ${errorText || 'Please try again.'}`);
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+          }
+        } catch (error) {
+          console.error('Fetch error:', error);
+          alert(`Failed to start analysis: ${error.message}. Please check your connection, file sizes, or try again later.`);
+          submitBtn.innerHTML = originalText;
+          submitBtn.disabled = false;
+        }
+      });
+
+      tuningForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const submitBtn = tuningForm.querySelector('.save-tuning-btn');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        submitBtn.disabled = true;
+
+        try {
+          const formData = new FormData(tuningForm);
+          const jsonData = {
+            score_model: formData.get('score_model'),
+            overall_analysis_model: formData.get('overall_analysis_model'),
+            qualitative_analysis_model: formData.get('qualitative_analysis_model'),
+            questions: {}
+          };
+
+          for (let i = 1; i <= 14; i++) {
+            const value = formData.get(`p_question_${i}`);
+            if (value) {
+              jsonData.questions[`p_question_${i}`] = value;
+            }
+          }
+
+          for (let i = 1; i <= 12; i++) {
+            const value = formData.get(`v_question_${i}`);
+            if (value) {
+              jsonData.questions[`v_question_${i}`] = value;
+            }
+          }
+
+          console.log('Tuning JSON data:', JSON.stringify(jsonData, null, 2));
+
+          const response = await fetch('{{ url_for('admin.save_tuning') }}', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify(jsonData)
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Server responded with status ${response.status}: ${errorText}`);
+          }
+
+          const result = await response.json();
+          if (result.status === 'success') {
+            alert('Tuning settings saved successfully!');
+          } else {
+            throw new Error(result.message || 'Unknown error occurred');
+          }
+
+          submitBtn.innerHTML = originalText;
+          submitBtn.disabled = false;
+        } catch (error) {
+          console.error('Tuning save error:', error);
+          alert(`Failed to save tuning settings: ${error.message}`);
+          submitBtn.innerHTML = originalText;
+          submitBtn.disabled = false;
+        }
+      });
+    });
+  </script>
+{% endblock %}

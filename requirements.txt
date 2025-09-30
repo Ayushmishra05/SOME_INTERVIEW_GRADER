@@ -24,7 +24,7 @@ langchain_openai
 librosa
 matplotlib
 mediapipe
-moviepy
+moviepy==1.0.3
 numpy
 openai
 opencv_contrib_python
@@ -32,7 +32,7 @@ opencv_python
 opencv_python_headless
 pandas
 pydub
-pyodide
+boto3
 pyOpenSSL
 python-dotenv
 PyYAML

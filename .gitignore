@@ -3,3 +3,5 @@ terraform-files/.terraform
 venv
 json
 static/uploads/
+aws/
+terraform-files/

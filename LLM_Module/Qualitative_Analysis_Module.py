@@ -13,11 +13,11 @@ from groq import APIError
 from openai import RateLimitError
 from dotenv import load_dotenv
 
-from utils.MODEL_CONFIG import MODEL_FOR_QUALITATIVE_ANALYSER
+from utils.MODEL_CONFIG import config
 from utils.get_api_key import get_api_key
-load_dotenv()
+load_dotenv(override=True)
 
-# api_key = os.environ['OPENAI_API_KEY']
+api_key = os.environ['OPENAI_API_KEY']
 
 
 
@@ -31,12 +31,12 @@ class VideoResumeEvaluator2:
         if not self.api_key:
             logger.error("GROQ_API_KEY environment variable not set")
             raise ValueError("GROQ_API_KEY not set")
-        print("Model for Qualitative Analyser " , MODEL_FOR_QUALITATIVE_ANALYSER)
+        print("Model for Qualitative Analyser " , config.MODEL_FOR_QUALITATIVE_ANALYSER)
         with open(r'utils/openai_key.json' , 'r') as fp:
             data = json.load(fp)
         self.llm = ChatOpenAI(
-            model=MODEL_FOR_QUALITATIVE_ANALYSER,
-            api_key=data['api_key']
+            model=config.MODEL_FOR_QUALITATIVE_ANALYSER,
+            api_key=api_key
         )
         self.output_parser = JsonOutputParser()
         self.output_json_path = output_json_path

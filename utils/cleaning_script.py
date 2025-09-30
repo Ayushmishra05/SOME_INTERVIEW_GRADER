@@ -1,7 +1,7 @@
 import os
 import time
 
-def clean_directories(expiry_minutes=5):
+def clean_directories(expiry_minutes=80):
     """
     Deletes files with given extensions from multiple directories (recursively),
     only if they are older than expiry_minutes.

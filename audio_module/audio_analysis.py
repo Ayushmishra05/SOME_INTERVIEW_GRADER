@@ -20,7 +20,7 @@ def label_encoder(label):
     except KeyError:
         raise ValueError(f"Invalid label '{label}'. Expected one of: {list(mapping.keys())}")
 
-TONE_MODEL_PATH = r"D:\SOME CLOUD\SOME-Grading-Automation\audio_module\model.h5"
+TONE_MODEL_PATH = r"/home/ubuntu/SOME_FINAL/audio_module/model.h5"
 try:
     tone_model = load_model(TONE_MODEL_PATH)
     print("Tone model loaded successfully.")

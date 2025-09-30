@@ -111,7 +111,7 @@ def create_combined_pdf(logo_path, json_path, scores_json_path, quality_json_pat
 
 
         flowables.append(
-            Paragraph(f"<b>Influence Quotient: {(round(score/65 * 100))}/100</b>", iq_style)
+            Paragraph(f"<b>Influence Quotient: {(round(score/70 * 100))}/100</b>", iq_style)
         )
         flowables.append(Spacer(1, 16))
     else:
@@ -126,7 +126,7 @@ def create_combined_pdf(logo_path, json_path, scores_json_path, quality_json_pat
 
 
         flowables.append(
-            Paragraph(f"<b>Influence Quotient: {round((score / 50 * 100))}/100</b>", iq_style)
+            Paragraph(f"<b>Influence Quotient: {round((score / 60 * 100))}/100</b>", iq_style)
         )
         flowables.append(Spacer(1, 16))
     chart_path = f"images/output_{os.path.basename(json_path).split('.')[0]}.png"
@@ -136,6 +136,8 @@ def create_combined_pdf(logo_path, json_path, scores_json_path, quality_json_pat
         flowables.append(Paragraph("Overall Evaluation Summary", section_style))
         flowables.append(chart_img)
         flowables.append(Spacer(1, 18))
+        flowables.append(PageBreak())
+        
     except Exception as e:
         print(f"Error generating radar chart: {e}")
         flowables.append(Paragraph("Overall Evaluation Summary (Chart unavailable)", section_style))

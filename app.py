@@ -1,9 +1,12 @@
-from quart import Quart, render_template, request, redirect, url_for, send_file, flash, send_from_directory
+from quart import Quart, render_template, request, redirect, url_for, send_file, flash, send_from_directory, session
 import os
 import json
 import aiohttp
 import asyncio
 from concurrent.futures import ProcessPoolExecutor
+from functools import wraps
+from dotenv import load_dotenv
+
 from LLM_Module.transcription_generator import VideoTranscriber
 from LLM_Module.Overall_Analysis_Module import VideoResumeEvaluator
 from video_module.Video_Eval import analyze_video_file
@@ -15,38 +18,48 @@ from audio_module.audio_analysis import analyze_audio_metrics
 import logging
 from utils.cleaning_script import clean_directories 
 from apscheduler.schedulers.background import BackgroundScheduler
-from utils.get_api_key import get_api_key , get_groq_key
+# from utils.get_api_key import get_api_key , get_groq_key
 import atexit
 
-
-
-
+load_dotenv()
 
 print("RUNNING CLEANING PROCESS")
-
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-get_api_key()
-get_groq_key()
+# get_api_key()
+# get_groq_key()
 
 app = Quart(__name__)
+ADMIN_PORT = os.environ['ADMIN_PORT']
+USER_PORT = os.environ['USER_PORT']
+AUTH_PORT = os.environ['AUTH_PORT']
+DOMAIN_NAME = os.environ['DOMAIN_NAME']
+# scheduler = BackgroundScheduler()
+# scheduler.add_job(func=clean_directories, trigger="interval", minutes=1)
+# scheduler.start()
 
-scheduler = BackgroundScheduler()
-scheduler.add_job(func=clean_directories, trigger="interval", minutes=1)
-scheduler.start()
-
-atexit.register(lambda: scheduler.shutdown())
+# atexit.register(lambda: scheduler.shutdown())
 app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024
 
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "your_secret_key_here")
+app.secret_key = os.getenv("SECRET_KEY", "your-secret-key-here")
 executor = ProcessPoolExecutor(max_workers=2)  # Adjust based on CPU cores
 
 for folder in ["json", "reports", os.path.join("static", "uploads"), "audio"]:
     os.makedirs(os.path.join(app.root_path, folder), exist_ok=True)
 
-async def process_video(user_name: str, video_path: str, presentation_mode: str, session, output_dir: str) -> str:
+# Authentication decorator
+def login_required(f):
+    @wraps(f)
+    async def check_login(*args, **kwargs):
+        if 'user_id' not in session:
+            await flash("Please log in to access this page.", 'warning')
+            return redirect(f"{DOMAIN_NAME}:{AUTH_PORT}/login")
+        return await f(*args, **kwargs)
+    return check_login
+
+async def process_video(user_name: str, video_path: str, presentation_mode: str, http_session, output_dir: str) -> str:
     try:
         # Ensure directories exist
         os.makedirs(os.path.join(app.root_path, "audio"), exist_ok=True)
@@ -110,6 +123,8 @@ async def process_video(user_name: str, video_path: str, presentation_mode: str,
 
         with open(output_json_path, 'r') as f:
             data = json.load(f)
+        
+        print(data)
         data.update({'User Name': user_name, 'LLM': eval_results})
         await asyncio.to_thread(json.dump, data, open(output_json_path, 'w'), indent=4)
         logger.info(f"Updated output JSON at {output_json_path}")
@@ -125,8 +140,8 @@ async def process_video(user_name: str, video_path: str, presentation_mode: str,
         logger.error(f"Error processing {video_path}: {e}")
         raise
 
-    
 @app.route("/", methods=["GET", "POST"])
+@login_required
 async def index():
     if request.method == "POST":
         form = await request.form
@@ -157,8 +172,9 @@ async def index():
                     return redirect(request.url)
                 await video_file.save(video_path)
 
-            async with aiohttp.ClientSession() as session:
-                pdf_path = await process_video(user_name, video_path, presentation_mode, session, uploads_dir)
+            # Changed 'session' to 'http_session' to avoid conflict with Quart session
+            async with aiohttp.ClientSession() as http_session:
+                pdf_path = await process_video(user_name, video_path, presentation_mode, http_session, uploads_dir)
                 await flash("Video analysis and PDF report generation completed successfully!", "success")
                 return await render_template(
                     "result.html",
@@ -170,17 +186,39 @@ async def index():
             logger.error(f"Error in request: {e}")
             await flash(f"An error occurred: {str(e)}", "danger")
             return redirect(request.url)
-    return await render_template("index.html")
+    
+    return await render_template("index.html", 
+                               user_name=session.get('name', 'User'),
+                               email=session.get('email'),
+                               role=session.get('role'))
+
+@app.route('/profile')
+@login_required
+async def user_profile():
+    return await render_template('user_profile.html')
+
+@app.route('/settings')
+@login_required
+async def user_settings():
+    return await render_template('user_settings.html')
 
 @app.route('/uploads/<filename>')
+@login_required
 async def uploaded_file(filename):
     uploads = os.path.join(app.root_path, "static", "uploads")
     return await send_from_directory(uploads, filename)
 
 @app.route("/download_pdf/<filename>")
+@login_required
 async def download_pdf(filename):
     pdf_path = os.path.join(app.root_path, "reports", filename)
     return await send_file(pdf_path, as_attachment=True, attachment_filename=f"evaluation_report_{filename}")
+
+@app.route('/user_logout')
+async def user_logout():
+    session.clear()
+    await flash("You have been logged out successfully.", 'info')
+    return redirect(f"{DOMAIN_NAME}:{AUTH_PORT}/login")
 
 @app.before_serving
 async def startup():
@@ -192,4 +230,5 @@ async def shutdown():
     logger.info("Shutting down application and process pool")
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=8000)
+     app.run(host='0.0.0.0', port=8002)
+

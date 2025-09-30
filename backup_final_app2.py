@@ -1,0 +1,705 @@
+from quart import Quart, Blueprint, render_template, request, redirect, url_for, send_file, flash, send_from_directory, session
+#from quart.middleware.proxy_fix import ProxyFix 
+import requests
+import os
+from dotenv import load_dotenv
+from pymongo import MongoClient
+from datetime import datetime, timedelta
+import random
+from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
+import json
+import aiohttp
+import asyncio
+from concurrent.futures import ProcessPoolExecutor
+import logging
+from apscheduler.schedulers.background import BackgroundScheduler
+import atexit
+#from werkzeug.middleware.proxy_fix import ProxyFix
+
+# Placeholder imports for modules
+from LLM_Module.transcription_generator import VideoTranscriber
+from LLM_Module.Overall_Analysis_Module import VideoResumeEvaluator
+from video_module.Video_Eval import analyze_video_file
+from LLM_Module.Qualitative_Analysis_Module import VideoResumeEvaluator2
+from report_generation_module.PDF_Generator import create_combined_pdf
+from video_module.drive_downloader import download_drive_url
+from LLM_Module.Scoring_Module import score_analyser
+from audio_module.audio_analysis import analyze_audio_metrics
+from utils.cleaning_script import clean_directories
+#from werkzeug.middleware.proxy_fix import ProxyFix
+
+# Load environment variables
+load_dotenv(override=True)
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+#from werkzeug.middleware.proxy_fix import ProxyFix
+
+# Initialize Quart app
+app = Quart(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024 * 1024
+app.secret_key = os.getenv("SECRET_KEY", "your-secret-key-here")
+#app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+#app.asgi_app = ProxyFix(app.asgi_app, x_proto=1, x_host=1)
+#app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+
+app.config.update(
+    SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_SAMESITE="None",
+     PREFERRED_URL_SCHEME="https"
+)
+
+# Environment variables
+DOMAIN_NAME = os.getenv('DOMAIN_NAME')
+
+# MongoDB setup
+mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
+mongo_client = MongoClient(mongo_uri)
+db = mongo_client["speak_database"]
+users_collection = db["users"]
+creds_collection = db["creds"]
+reports_collection = db["reports"]  # Added for storing report metadata
+
+# API configuration
+client_id = os.getenv("CLIENT_ID")
+client_secret = os.getenv("CLIENT_SECRET")
+access_token = os.getenv("ACCESS_TOKEN")
+api_url = "https://speak.some.education/admin/api/v2/users"
+
+# OTP Configuration
+OTP_TTL_MIN = 15  # minutes
+
+# Initialize process pool executor
+executor = ProcessPoolExecutor(max_workers=4)  # Increased to handle bulk uploads
+
+# Create directories
+for folder in ["json", "reports", os.path.join("static", "Uploads"), "audio", "images", "logos"]:
+    os.makedirs(os.path.join(app.root_path, folder), exist_ok=True)
+
+# Scheduler for cleaning directories
+scheduler = BackgroundScheduler()
+scheduler.add_job(func=clean_directories, trigger="interval", minutes=1)
+scheduler.start()
+atexit.register(lambda: scheduler.shutdown())
+
+# Blueprints
+auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
+admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
+
+# Authentication functions
+def generate_otp(length=6):
+    """Generate a random OTP"""
+    return "".join(random.choices("0123456789", k=length))
+
+def store_pending_otp(email, otp):
+    """Store OTP for verification"""
+    creds_collection.update_one(
+        {"email": email},
+        {"$set": {
+            "password": None,
+            "otp": otp,
+            "otp_expire": datetime.utcnow() + timedelta(minutes=OTP_TTL_MIN)
+        }},
+        upsert=True
+    )
+
+def verify_otp(email, user_otp):
+    """Verify the OTP entered by user"""
+    rec = creds_collection.find_one({"email": email})
+    if not rec:
+        return False, "No pending OTP. Start sign-in again."
+
+    if datetime.utcnow() > rec.get("otp_expire", datetime.utcnow()):
+        creds_collection.delete_one({"email": email})
+        return False, "OTP expired. Please request a new one."
+
+    stored_otp = rec.get("otp")
+    logger.debug(f"Stored OTP: {stored_otp}, User entered: {user_otp}")
+    if str(user_otp).strip() == str(stored_otp).strip():
+        return True, "OTP verified."
+    return False, f"Incorrect OTP."
+
+def make_db():
+    all_users = []
+    all_admins = []
+
+    try:
+        for i in range(25):
+            querystring = {
+                "role": "user",
+                "page": i,
+                "items_per_page": 200
+            }
+            headers = {
+                "Accept": "application/json",
+                "Authorization": f"Bearer {access_token}",
+                "Lw-Client": client_id
+            }
+            response = requests.get(api_url, headers=headers, params=querystring)
+            if response.status_code == 200:
+                data = response.json()
+                users = data.get("data", [])
+                all_users.extend(users)
+                logger.info(f"Fetched {len(users)} users from page {i}")
+                if len(users) == 0:
+                    break
+            else:
+                logger.error(f"Error on page {i}: {response.status_code}, {response.text}")
+                continue
+
+        for i in range(1):
+            querystring = {
+                "role": "admin",
+                "page": i,
+                "items_per_page": 200
+            }
+            headers = {
+                "Accept": "application/json",
+                "Authorization": f"Bearer {access_token}",
+                "Lw-Client": client_id
+            }
+            response = requests.get(api_url, headers=headers, params=querystring)
+            if response.status_code == 200:
+                data = response.json()
+                admins = data.get("data", [])
+                all_admins.extend(admins)
+                logger.info(f"Fetched {len(admins)} admins from page {i}")
+            else:
+                logger.error(f"Error on page {i}: {response.status_code}, {response.text}")
+                continue
+
+        if all_users or all_admins:
+            users_collection.delete_many({})
+            if all_users:
+                users_collection.insert_many(all_users)
+            if all_admins:
+                users_collection.insert_many(all_admins)
+            return f"Inserted {len(all_users)} users and {len(all_admins)} admins into MongoDB."
+        else:
+            return "No users or admins fetched."
+    except Exception as e:
+        return f"Error rebuilding database: {str(e)}"
+
+def login(email, password):
+    """Login a user"""
+    user = users_collection.find_one({"email": email})
+    if user:
+        verify = creds_collection.find_one({"email": email})
+        if verify and verify.get("password"):
+            if check_password_hash(verify["password"], password):
+                role = "admin" if user.get("is_admin", False) else "user"
+                return True, f"Login Successful. Role: {role.title()}", role, user
+            else:
+                return False, "Invalid password.", None, None
+        else:
+            return False, "Please complete sign-in process first.", None, None
+    else:
+        return False, f"No user found with email: {email}", None, None
+
+# Authentication decorators
+def login_required(f):
+    @wraps(f)
+    async def check_login(*args, **kwargs):
+        if 'user_id' not in session:
+            await flash("Please log in to access this page.", 'warning')
+            return redirect(url_for('auth.login_page'))
+        return await f(*args, **kwargs)
+    return check_login
+
+def admin_required(f):
+    @wraps(f)
+    async def check_admin(*args, **kwargs):
+        if 'user_id' not in session:
+            await flash("Please log in to access this page.", 'warning')
+            return redirect(url_for('auth.login_page'))
+        if session.get('role') != 'admin':
+            await flash("Admin access required.", 'error')
+            return redirect(url_for('index'))
+        return await f(*args, **kwargs)
+    return check_admin
+
+# Video processing function
+async def process_video(user_name: str, video_path: str, presentation_mode: str, http_session, output_dir: str) -> dict:
+    try:
+        logger.debug(f"Processing video: {video_path}, user: {user_name}, mode: {presentation_mode}")
+        video_name = os.path.basename(video_path).split('.')[0]
+        audio_path = os.path.join(app.root_path, "audio", f"audio_{video_name}.wav")
+        transcription_json_path = os.path.join(app.root_path, "json", f"transcription_{video_name}.json")
+        output_json_path = os.path.join(app.root_path, "json", f"output_{video_name}.json")
+        scores_json_path = os.path.join(app.root_path, "json", f"scores_{video_name}.json")
+        quality_json_path = os.path.join(app.root_path, "json", f"quality_{video_name}.json")
+        audio_metrics_json_path = os.path.join(app.root_path, "json", f"audio_metrics_{video_name}.json")
+        presentation_json_path = os.path.join(app.root_path, "json", f"presentation_{video_name}.json")
+        pdf_path = os.path.join(app.root_path, "reports", f"report_{video_name}.pdf")
+        graph_path = os.path.join(app.root_path, "json", f"graph_{video_name}.json")
+
+        await asyncio.to_thread(json.dump, {"presentation_mode": presentation_mode}, open(presentation_json_path, "w"), indent=4)
+        logger.debug(f"Saved presentation JSON to {presentation_json_path}")
+
+        with open(video_path, 'rb') as f:
+            transcriber = VideoTranscriber(f, audio_path, transcription_json_path)
+            transcription_output = await transcriber.transcribe()
+
+        cv_task = asyncio.get_event_loop().run_in_executor(None, analyze_video_file, video_path)
+        audio_task = asyncio.to_thread(analyze_audio_metrics, audio_path, transcription_json_path, audio_metrics_json_path)
+        analysis_output, audio_analysis = await asyncio.gather(cv_task, audio_task, return_exceptions=True)
+
+        if isinstance(analysis_output, Exception) or isinstance(audio_analysis, Exception):
+            raise Exception(f"Error in CV or audio analysis: {analysis_output}, {audio_analysis}")
+
+        await asyncio.to_thread(json.dump, analysis_output, open(output_json_path, 'w', encoding='utf-8'), ensure_ascii=False, indent=4)
+        logger.debug(f"Saved CV analysis to {output_json_path}")
+
+        evaluator = VideoResumeEvaluator(
+            model_name="llama-3.3-70b-versatile",
+            presentation_json_path=presentation_json_path,
+            output_json_path=output_json_path,
+            audio_metrics_json_path=audio_metrics_json_path
+        )
+        quality_evaluator = VideoResumeEvaluator2(
+            model_name="llama-3.3-70b-versatile",
+            output_json_path=quality_json_path
+        )
+        eval_results = await evaluator.evaluate_transcription(transcription_json_path)
+        output = await score_analyser(
+            eval_results,
+            transcription_json_path=transcription_json_path,
+            presentation_json_path=presentation_json_path,
+            output_json_path=output_json_path,
+            audio_metrics_json_path=audio_metrics_json_path
+        )
+        await quality_evaluator.evaluate_transcription(transcription_json_path)
+
+        await asyncio.to_thread(json.dump, output, open(scores_json_path, 'w'), indent=4)
+        logger.debug(f"Saved scores to {scores_json_path}")
+
+        with open(output_json_path, 'r') as f:
+            data = json.load(f)
+        data.update({'User Name': user_name, 'LLM': eval_results})
+        await asyncio.to_thread(json.dump, data, open(output_json_path, 'w'), indent=4)
+        logger.debug(f"Updated output JSON at {output_json_path}")
+
+        logo_path = os.path.join(app.root_path, "logos", "somelogo.png")
+        await asyncio.to_thread(create_combined_pdf, logo_path, output_json_path, scores_json_path, quality_json_path, presentation_json_path, pdf_path, graph_path)
+        logger.debug(f"Generated PDF at {pdf_path}")
+
+        if os.path.exists(audio_path):
+            await asyncio.to_thread(os.remove, audio_path)
+
+        return {"filename": os.path.basename(video_path), "pdf_filename": os.path.basename(pdf_path)}
+    except Exception as e:
+        logger.error(f"Error processing {video_path}: {str(e)}")
+        raise
+
+# Authentication routes
+@auth_bp.route('/')
+async def auth_index():
+    return redirect(url_for('auth.login_page'))
+
+@auth_bp.route('/signin', methods=['GET', 'POST'])
+async def signin_page():
+    if request.method == 'POST':
+        form = await request.form
+        email = form.get('email', '').strip()
+
+        if not email:
+            await flash('Please enter a valid email address.', 'error')
+            return await render_template('signin.html')
+
+        user = users_collection.find_one({"email": email})
+        if not user:
+            await flash('User not found. Reloading database...', 'warning')
+            db_result = make_db()
+            logger.info(f"Database reload result: {db_result}")
+
+            user = users_collection.find_one({"email": email})
+            if not user:
+                await flash(f"Database reloaded but user still not found with email: {email}", 'error')
+                return await render_template('signin.html')
+            else:
+                await flash("Database reloaded successfully.", 'success')
+
+        try:
+            from mail import send_otp
+            otp = send_otp(email)
+            if otp:
+                store_pending_otp(email, otp)
+                await flash("OTP sent to your email address.", 'info')
+                logger.debug(f"OTP sent and stored: {otp}")
+                return redirect(url_for('auth.otp_page', email=email))
+            else:
+                await flash("Failed to send OTP. Please try again.", 'error')
+        except Exception as e:
+            await flash(f"Error sending OTP: {str(e)}", 'error')
+            logger.error(f"Error in sending OTP: {str(e)}")
+
+    return await render_template('signin.html')
+
+@auth_bp.route('/signin/otp', methods=['GET', 'POST'])
+async def otp_page():
+    email = request.args.get('email') or (await request.form).get('email')
+
+    if not email:
+        await flash("Invalid access. Please start sign-in process again.", 'error')
+        return redirect(url_for('auth.signin_page'))
+
+    if request.method == 'POST':
+        form = await request.form
+        user_otp = form.get('otp', '').strip()
+        password = form.get('password', '').strip()
+        confirm_password = form.get('confirm_password', '').strip()
+
+        if not user_otp or not password or not confirm_password:
+            await flash("All fields are required.", 'error')
+            return await render_template('otp.html', email=email)
+
+        if password != confirm_password:
+            await flash("Passwords do not match.", 'error')
+            return await render_template('otp.html', email=email)
+
+        if len(password) < 6:
+            await flash("Password must be at least 6 characters long.", 'error')
+            return await render_template('otp.html', email=email)
+
+        ok, msg = verify_otp(email, user_otp)
+        if not ok:
+            await flash(msg, 'error')
+            return await render_template('otp.html', email=email)
+
+        hashed_password = generate_password_hash(password)
+        creds_collection.update_one(
+            {"email": email},
+            {"$set": {"password": hashed_password},
+             "$unset": {"otp": "", "otp_expire": ""}}
+        )
+
+        await flash("Sign-in completed successfully. You can now log in.", 'success')
+        return redirect(url_for('auth.login_page'))
+
+    return await render_template('otp.html', email=email)
+
+@auth_bp.route('/resend-otp')
+async def resend_otp():
+    email = request.args.get('email', '').strip()
+    if not email:
+        await flash("Invalid request.", 'error')
+        return redirect(url_for('auth.signin_page'))
+
+    try:
+        from mail import send_otp
+        otp = send_otp(email)
+        if otp:
+            store_pending_otp(email, otp)
+            await flash("New OTP sent to your email address.", 'success')
+            logger.debug(f"New OTP sent and stored: {otp}")
+        else:
+            await flash("Failed to send OTP. Please try again.", 'error')
+    except Exception as e:
+        await flash(f"Error sending OTP: {str(e)}", 'error')
+        logger.error(f"Error in resending OTP: {str(e)}")
+
+    return redirect(url_for('auth.otp_page', email=email))
+
+@auth_bp.route('/login', methods=['GET', 'POST'])
+async def login_page():
+    if request.method == 'POST':
+        form = await request.form
+        email = form.get('email', '').strip()
+        password = form.get('password', '').strip()
+
+        if not email or not password:
+            await flash("Please enter both email and password.", 'error')
+            return await render_template('login.html')
+
+        success, message, role, user = login(email, password)
+        if success:
+            session['user_id'] = str(user['_id'])
+            session['email'] = user['email']
+            session['role'] = role
+            session['name'] = user.get('name', 'User')
+            await flash(message, 'success')
+            if role == 'admin':
+                return redirect(url_for('admin.index'))
+            else:
+                return redirect(url_for('index'))
+        else:
+            await flash(message, 'error')
+
+    return await render_template('login.html')
+
+@auth_bp.route('/logout')
+async def logout():
+    session.clear()
+    await flash("You have been logged out successfully.", 'info')
+    return redirect(url_for('auth.login_page'))
+
+# Main app routes (user functionality)
+@app.route("/", methods=["GET", "POST"])
+@login_required
+async def index():
+    if request.method == "POST":
+        form = await request.form
+        files = await request.files
+        user_name = form.get("user_name")
+        youtube_url = form.get("youtube_url")
+        video_file = files.get("video_file")
+        presentation_mode = form.get("presentation_mode")
+        logger.info(f"Received request: user={user_name}, youtube_url={youtube_url}, presentation_mode={presentation_mode}")
+
+        if not user_name:
+            await flash("Name is required before uploading a video.", "warning")
+            return redirect(request.url)
+
+        try:
+            uploads_dir = os.path.join(app.root_path, "static", "Uploads")
+            video_filename = f"video_{user_name}_{os.urandom(4).hex()}.mp4"
+            video_path = os.path.join(uploads_dir, video_filename)
+
+            if youtube_url:
+                await download_drive_url(youtube_url, video_path)
+                if not os.path.exists(video_path):
+                    await flash("Failed to download video from URL.", "warning")
+                    return redirect(request.url)
+            else:
+                if not video_file:
+                    await flash("Video file is missing!", "warning")
+                    return redirect(request.url)
+                await video_file.save(video_path)
+
+            async with aiohttp.ClientSession() as http_session:
+                video_data = await process_video(user_name, video_path, presentation_mode, http_session, uploads_dir)
+                # Save report metadata
+                reports_collection.insert_one({
+                    "user_id": session['user_id'],
+                    "user_name": user_name,
+                    "pdf_filename": video_data["pdf_filename"],
+                    "created_at": datetime.utcnow()
+                })
+                await flash("Video analysis and PDF report generation completed successfully!", "success")
+                return await render_template(
+                    "result.html",
+                    user_name=user_name,
+                    video_filename=video_data["filename"],
+                    pdf_url=url_for("download_pdf", filename=video_data["pdf_filename"])
+                )
+        except Exception as e:
+            logger.error(f"Error in request: {e}")
+            await flash(f"An error occurred: {str(e)}", "danger")
+            return redirect(request.url)
+
+    submissions = list(reports_collection.find({"user_id": session['user_id']}))
+    return await render_template(
+        "index.html",
+        user_name=session.get('name', 'User'),
+        email=session.get('email'),
+        role=session.get('role'),
+        submissions=submissions
+    )
+
+@app.route('/profile')
+@login_required
+async def user_profile():
+    return await render_template('user_profile.html')
+
+@app.route('/settings')
+@login_required
+async def user_settings():
+    return await render_template('user_settings.html')
+
+@app.route('/uploads/<filename>')
+@login_required
+async def uploaded_file(filename):
+    uploads = os.path.join(app.root_path, "static", "Uploads")
+    return await send_from_directory(uploads, filename)
+
+@app.route("/download_pdf/<filename>")
+@login_required
+async def download_pdf(filename):
+    pdf_path = os.path.join(app.root_path, "reports", filename)
+    return await send_file(pdf_path, as_attachment=True, attachment_filename=f"evaluation_report_{filename}")
+
+# Admin routes
+@admin_bp.route("/", methods=["GET", "POST"])
+@login_required
+@admin_required
+async def index():
+    try:
+        with open('utils/tuned.json', 'r') as f:
+            data = json.load(f)
+        model_config = {
+            'qualitative': data.get('qualitative', 'gpt-4'),
+            'overall': data.get('overall', 'gpt-4'),
+            'score': data.get('score', 'gpt-4'),
+            'p_question_1': data.get('p_question_1', "100"),
+            'p_question_2': data.get('p_question_2', "100"),
+            'p_question_3': data.get('p_question_3', "100"),
+            'p_question_4': data.get('p_question_4', "100"),
+            'p_question_5': data.get('p_question_5', "100"),
+            'p_question_6': data.get('p_question_6', "100"),
+            'p_question_7': data.get('p_question_7', "100"),
+            'p_question_8': data.get('p_question_8', "100"),
+            'p_question_9': data.get('p_question_9', "100"),
+            'p_question_10': data.get('p_question_10', "100"),
+            'p_question_11': data.get('p_question_11', "100"),
+            'p_question_12': data.get('p_question_12', "100"),
+            'p_question_13': data.get('p_question_13', "100"),
+            'p_question_14': data.get('p_question_14', "100"),
+            'v_question_1': data.get('v_question_1', "100"),
+            'v_question_2': data.get('v_question_2', "100"),
+            'v_question_3': data.get('v_question_3', "100"),
+            'v_question_4': data.get('v_question_4', "100"),
+            'v_question_5': data.get('v_question_5', "100"),
+            'v_question_6': data.get('v_question_6', "100"),
+            'v_question_7': data.get('v_question_7', "100"),
+            'v_question_8': data.get('v_question_8', "100"),
+            'v_question_9': data.get('v_question_9', "100"),
+            'v_question_10': data.get('v_question_10', "100"),
+            'v_question_11': data.get('v_question_11', "100"),
+            'v_question_12': data.get('v_question_12', "100")
+        }
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        logger.error(f"Error loading tuned.json: {str(e)}")
+        model_config = {}
+
+    if request.method == "POST":
+        try:
+            form = await request.form
+            files = await request.files
+            user_name = form.get("user_name", "").strip()
+            video_urls = form.get("videoUrls", "").split('\n')
+            video_files = files.getlist("video_files[]") if "video_files[]" in files else []
+            presentation_mode = form.get("presentation_mode", "on")
+            logger.debug(f"Received request: user={user_name}, video_urls={video_urls}, video_files={[f.filename for f in video_files if f.filename]}, presentation_mode={presentation_mode}")
+
+            if not user_name:
+                await flash("Please provide a valid name.", "danger")
+                return redirect(request.url)
+
+            if not any(url.strip() for url in video_urls) and not any(f.filename for f in video_files):
+                await flash("Please provide at least one video URL or file.", "danger")
+                return redirect(request.url)
+
+            uploads_dir = os.path.join(app.root_path, "static", "Uploads")
+            videos = []
+
+            async with aiohttp.ClientSession() as http_session:
+                for url in video_urls:
+                    if url.strip():
+                        try:
+                            video_filename = f"video_{user_name}_{os.urandom(4).hex()}.mp4"
+                            video_path = os.path.join(uploads_dir, video_filename)
+                            await download_drive_url(url, video_path)
+                            if not os.path.exists(video_path):
+                                await flash(f"Failed to download video from URL: {url}", "warning")
+                                continue
+                            video_data = await process_video(user_name, video_path, presentation_mode, http_session, uploads_dir)
+                            reports_collection.insert_one({
+                                "user_id": session['user_id'],
+                                "user_name": user_name,
+                                "pdf_filename": video_data["pdf_filename"],
+                                "created_at": datetime.utcnow()
+                            })
+                            videos.append(video_data)
+                        except Exception as e:
+                            logger.error(f"Error processing URL {url}: {str(e)}")
+                            await flash(f"Error processing URL {url}: {str(e)}", "warning")
+
+                for video_file in video_files:
+                    if video_file and video_file.filename:
+                        try:
+                            original_filename = video_file.filename
+                            video_filename = f"file_{user_name}_{os.urandom(4).hex()}.mp4"
+                            video_path = os.path.join(uploads_dir, video_filename)
+                            await video_file.save(video_path)
+                            logger.debug(f"Saved file {original_filename} as {video_filename}, size: {os.path.getsize(video_path)} bytes")
+                            video_data = await process_video(user_name, video_path, presentation_mode, http_session, uploads_dir)
+                            reports_collection.insert_one({
+                                "user_id": session['user_id'],
+                                "user_name": user_name,
+                                "pdf_filename": video_data["pdf_filename"],
+                                "created_at": datetime.utcnow()
+                            })
+                            videos.append(video_data)
+                        except Exception as e:
+                            logger.error(f"Error processing file {original_filename}: {str(e)}")
+                            await flash(f"Error processing file {original_filename}: {str(e)}", "warning")
+
+            if not videos:
+                await flash("No valid videos were processed.", "danger")
+                return redirect(request.url)
+
+            await flash("Video analysis and PDF report generation completed successfully!", "success")
+            return await render_template(
+                "multi-result2.html",
+                user_name=user_name,
+                videos=videos
+            )
+        except Exception as e:
+            logger.error(f"Error in admin index route: {str(e)}")
+            await flash(f"Server error: {str(e)}", "danger")
+            return redirect(request.url)
+
+    return await render_template(
+        "multi-index2.html",
+        model_config=model_config,
+        user_name=session.get('name', 'Admin'),
+        email=session.get('email')
+    )
+
+# @admin_bp.route('/users')
+# @login_required
+# @admin_required
+# async def manage_users():
+#    return await render_template('manage_users.html')
+
+# @admin_bp.route('/settings')
+# @login_required
+# @admin_required
+# async def admin_settings():
+#    return await render_template('admin_settings.html')
+
+@admin_bp.route('/save_tuning', methods=['POST'])
+@login_required
+@admin_required
+async def save_tuning():
+    try:
+        data = await request.get_json()
+        logger.debug(f"Received tuning data: {data}")
+        transformed_data = {
+            "overall": data.get('overall_analysis_model', 'gpt-4'),
+            "qualitative": data.get('qualitative_analysis_model', 'gpt-4'),
+            "score": data.get('score_model', 'gpt-4')
+        }
+        if 'questions' in data:
+            transformed_data.update(data['questions'])
+
+        with open('utils/tuned.json', 'w') as f:
+            json.dump(transformed_data, f, indent=2)
+
+        return {'status': 'success'}, 200
+    except Exception as e:
+        logger.error(f"Error in save_tuning: {str(e)}")
+        return {'status': 'error', 'message': str(e)}, 500
+
+@app.errorhandler(413)
+async def request_entity_too_large(error):
+    await flash("File too large. Please upload files smaller than 800MB.", "danger")
+    return redirect(url_for('index'))
+
+@app.before_serving
+async def startup():
+    logger.info("Starting application and process pool")
+
+@app.after_serving
+async def shutdown():
+    executor.shutdown()
+    logger.info("Shutting down application and process pool")
+
+# Register blueprints
+app.register_blueprint(auth_bp)
+app.register_blueprint(admin_bp)
+
+#if __name__ == "__main__":
+#    app.run(host='0.0.0.0', port=8002)
