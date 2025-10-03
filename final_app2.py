@@ -15,6 +15,8 @@ from concurrent.futures import ProcessPoolExecutor
 import logging
 from apscheduler.schedulers.background import BackgroundScheduler
 import atexit
+import boto3
+from pymongo import MongoClient
 #from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Placeholder imports for modules
@@ -62,6 +64,19 @@ users_collection = db["users"]
 creds_collection = db["creds"]
 reports_collection = db["reports"]  # Added for storing report metadata
 
+
+mongo_uri1 = "mongodb://localhost:27017/"
+mongo_client1 = MongoClient(mongo_uri1)
+db1 = mongo_client1.somereports
+collection1 = db1.uploads
+
+
+bucket_name = 'some-report-bucket'
+region = 'eu-north-1'
+s3_folder = 'reports/'
+
+s3 = boto3.client('s3', region_name=region)
+
 # API configuration
 client_id = os.getenv("CLIENT_ID")
 client_secret = os.getenv("CLIENT_SECRET")
@@ -70,6 +85,56 @@ api_url = "https://speak.some.education/admin/api/v2/users"
 
 # OTP Configuration
 OTP_TTL_MIN = 15  # minutes
+
+
+def upload_to_s3(file_path, email):
+    original_filename = os.path.basename(file_path)
+    s3_key = f"{s3_folder}{original_filename}"
+    
+    s3.upload_file(
+        file_path,
+        bucket_name,
+        s3_key,
+        ExtraArgs={'ContentType': 'application/pdf'}
+    )
+    
+    response = s3.head_object(Bucket=bucket_name, Key=s3_key)
+    etag = response['ETag'].strip('"')
+    
+    s3_uri = f"s3://{bucket_name}/{s3_key}"
+    arn = f"arn:aws:s3:::{bucket_name}/{s3_key}"
+    object_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{s3_key}"
+    
+    # Store info with email in MongoDB
+    doc = {
+        'email': email,
+        'file_name': original_filename,
+        's3_uri': s3_uri,
+        'arn': arn,
+        'etag': etag,
+        'object_url': object_url
+    }
+    collection1.insert_one(doc)
+    
+    print(f"Uploaded {original_filename} for {email}")
+    print(f"S3 URI: {s3_uri}\nARN: {arn}\nEtag: {etag}\nURL: {object_url}")
+
+
+def download_and_delete_by_email(email, download_path):
+    doc = collection1.find_one({'email': email})
+    if not doc:
+        print(f"No upload found for email: {email}")
+        return
+    s3_key = f"{s3_folder}{doc['file_name']}"
+    s3.download_file(bucket_name, s3_key, download_path)
+    print(f"Downloaded file to {download_path}")
+    
+    s3.delete_object(Bucket=bucket_name, Key=s3_key)
+    print(f"Deleted file from S3: {s3_key}")
+    
+    collection.delete_one({'email': email})
+    print(f"Removed MongoDB record for {email}")
+
 
 # Initialize process pool executor
 executor = ProcessPoolExecutor(max_workers=4)  # Increased to handle bulk uploads
@@ -306,6 +371,15 @@ async def process_video(user_name: str, video_path: str, presentation_mode: str,
         await asyncio.to_thread(create_combined_pdf, logo_path, output_json_path, scores_json_path, quality_json_path, presentation_json_path, pdf_path, graph_path)
         logger.debug(f"Generated PDF at {pdf_path}")
 
+        # New code: Upload report to S3 after PDF generation
+        user_email = session.get('email')
+        if user_email:
+            try:
+                # Upload the generated PDF report to S3 with user's email
+                upload_to_s3(pdf_path, user_email)
+            except Exception as e:
+                logger.error(f"Failed to upload report to S3 for {user_email}: {str(e)}")
+
         if os.path.exists(audio_path):
             await asyncio.to_thread(os.remove, audio_path)
 
@@ -313,6 +387,7 @@ async def process_video(user_name: str, video_path: str, presentation_mode: str,
     except Exception as e:
         logger.error(f"Error processing {video_path}: {str(e)}")
         raise
+
 
 # Authentication routes
 @auth_bp.route('/')
