@@ -57,7 +57,7 @@ app.config.update(
 DOMAIN_NAME = os.getenv('DOMAIN_NAME')
 
 # MongoDB setup
-mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
+mongo_uri = os.getenv("MONGO_URI", "mongodb+srv://aitool_db_user:odmBDzFB9DdNYu5H@cluster0.k7po371.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
 mongo_client = MongoClient(mongo_uri)
 db = mongo_client["speak_database"]
 users_collection = db["users"]
