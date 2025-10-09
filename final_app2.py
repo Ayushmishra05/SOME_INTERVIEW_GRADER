@@ -1,9 +1,10 @@
-from quart import Quart, Blueprint, render_template, request, redirect, url_for, send_file, flash, send_from_directory, session , abort
-#from quart.middleware.proxy_fix import ProxyFix
+from quart import Quart, Blueprint, render_template, request, redirect, url_for, send_file, flash, send_from_directory, session, abort
 import requests
 import os
 from dotenv import load_dotenv
+import certifi
 from pymongo import MongoClient
+from botocore.exceptions import ClientError
 from datetime import datetime, timedelta
 import random
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -16,8 +17,6 @@ import logging
 from apscheduler.schedulers.background import BackgroundScheduler
 import atexit
 import boto3
-from pymongo import MongoClient
-#from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Placeholder imports for modules
 from LLM_Module.transcription_generator import VideoTranscriber
@@ -29,7 +28,6 @@ from video_module.drive_downloader import download_drive_url
 from LLM_Module.Scoring_Module import score_analyser
 from audio_module.audio_analysis import analyze_audio_metrics
 from utils.cleaning_script import clean_directories
-#from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Load environment variables
 load_dotenv(override=True)
@@ -37,39 +35,63 @@ load_dotenv(override=True)
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-#from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Initialize Quart app
 app = Quart(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024 * 1024
 app.secret_key = os.getenv("SECRET_KEY", "your-secret-key-here")
-#app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
-#app.asgi_app = ProxyFix(app.asgi_app, x_proto=1, x_host=1)
-#app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 app.config.update(
     SESSION_COOKIE_SECURE=True,
     SESSION_COOKIE_SAMESITE="None",
-     PREFERRED_URL_SCHEME="https"
+    PREFERRED_URL_SCHEME="https"
 )
 
 # Environment variables
 DOMAIN_NAME = os.getenv('DOMAIN_NAME')
 
-# MongoDB setup
-mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
-mongo_client = MongoClient(mongo_uri)
+# MongoDB Atlas setup - First Database (speak_database)
+# Replace <username>, <password>, <cluster> with your actual credentials
+mongo_uri = "mongodb+srv://<username>:<password>@<cluster>.mongodb.net/?retryWrites=true&w=majority&appName=speak_database"
+
+try:
+    mongo_client = MongoClient(
+        mongo_uri,
+        tlsCAFile=certifi.where(),
+        serverSelectionTimeoutMS=5000
+    )
+    # Test connection
+    mongo_client.server_info()
+    logger.info("MongoDB Atlas connection successful (speak_database)")
+except Exception as e:
+    logger.error(f"MongoDB Atlas connection failed: {str(e)}")
+    raise
+
 db = mongo_client["speak_database"]
 users_collection = db["users"]
 creds_collection = db["creds"]
-reports_collection = db["reports"]  # Added for storing report metadata
+reports_collection = db["reports"]
 
+# MongoDB Atlas setup - Second Database (somereports)
 mongo_uri1 = "mongodb+srv://aitool_db_user:odmBDzFB9DdNYu5H@cluster0.k7po371.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-mongo_client1 = MongoClient(mongo_uri1)
+
+try:
+    mongo_client1 = MongoClient(
+        mongo_uri1,
+        tlsCAFile=certifi.where(),
+        serverSelectionTimeoutMS=5000
+    )
+    # Test connection
+    mongo_client1.server_info()
+    logger.info("MongoDB Atlas connection successful (somereports)")
+except Exception as e:
+    logger.error(f"MongoDB Atlas connection failed: {str(e)}")
+    raise
+
 db1 = mongo_client1.somereports
 collection1 = db1.uploads
 
-
+# S3 Configuration
 bucket_name = 'some-report-bucket'
 region = 'eu-north-1'
 s3_folder = 'reports/'
@@ -87,6 +109,7 @@ OTP_TTL_MIN = 15  # minutes
 
 
 def upload_to_s3(file_path, email):
+    """Upload PDF report to S3 with error handling"""
     try:
         original_filename = os.path.basename(file_path)
         s3_key = f"{s3_folder}{original_filename}"
@@ -105,18 +128,22 @@ def upload_to_s3(file_path, email):
         arn = f"arn:aws:s3:::{bucket_name}/{s3_key}"
         object_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{s3_key}"
         
+        # Store info with email in MongoDB (FIXED: using collection1)
         doc = {
             'email': email,
             'file_name': original_filename,
             's3_uri': s3_uri,
             'arn': arn,
             'etag': etag,
-            'object_url': object_url
+            'object_url': object_url,
+            'uploaded_at': datetime.utcnow()
         }
         collection1.insert_one(doc)
         
         logger.info(f"Uploaded {original_filename} for {email}")
+        logger.info(f"S3 URI: {s3_uri}\nARN: {arn}\nEtag: {etag}\nURL: {object_url}")
         return True
+        
     except ClientError as e:
         logger.error(f"S3 upload error for {email}: {str(e)}")
         return False
@@ -126,6 +153,7 @@ def upload_to_s3(file_path, email):
 
 
 def download_and_delete_by_email(email, download_path):
+    """Download report from S3 and delete with error handling"""
     try:
         doc = collection1.find_one({'email': email})
         if not doc:
@@ -154,8 +182,9 @@ def download_and_delete_by_email(email, download_path):
         logger.error(f"Unexpected error in download_and_delete: {str(e)}")
         return False
 
+
 # Initialize process pool executor
-executor = ProcessPoolExecutor(max_workers=4)  # Increased to handle bulk uploads
+executor = ProcessPoolExecutor(max_workers=4)
 
 # Create directories
 for folder in ["json", "reports", os.path.join("static", "Uploads"), "audio", "images", "logos"]:
@@ -171,40 +200,54 @@ atexit.register(lambda: scheduler.shutdown())
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
+
 # Authentication functions
 def generate_otp(length=6):
     """Generate a random OTP"""
     return "".join(random.choices("0123456789", k=length))
 
+
 def store_pending_otp(email, otp):
     """Store OTP for verification"""
-    creds_collection.update_one(
-        {"email": email},
-        {"$set": {
-            "password": None,
-            "otp": otp,
-            "otp_expire": datetime.utcnow() + timedelta(minutes=OTP_TTL_MIN)
-        }},
-        upsert=True
-    )
+    try:
+        creds_collection.update_one(
+            {"email": email},
+            {"$set": {
+                "password": None,
+                "otp": otp,
+                "otp_expire": datetime.utcnow() + timedelta(minutes=OTP_TTL_MIN)
+            }},
+            upsert=True
+        )
+        return True
+    except Exception as e:
+        logger.error(f"Error storing OTP: {str(e)}")
+        return False
+
 
 def verify_otp(email, user_otp):
     """Verify the OTP entered by user"""
-    rec = creds_collection.find_one({"email": email})
-    if not rec:
-        return False, "No pending OTP. Start sign-in again."
+    try:
+        rec = creds_collection.find_one({"email": email})
+        if not rec:
+            return False, "No pending OTP. Start sign-in again."
 
-    if datetime.utcnow() > rec.get("otp_expire", datetime.utcnow()):
-        creds_collection.delete_one({"email": email})
-        return False, "OTP expired. Please request a new one."
+        if datetime.utcnow() > rec.get("otp_expire", datetime.utcnow()):
+            creds_collection.delete_one({"email": email})
+            return False, "OTP expired. Please request a new one."
 
-    stored_otp = rec.get("otp")
-    logger.debug(f"Stored OTP: {stored_otp}, User entered: {user_otp}")
-    if str(user_otp).strip() == str(stored_otp).strip():
-        return True, "OTP verified."
-    return False, f"Incorrect OTP."
+        stored_otp = rec.get("otp")
+        logger.debug(f"Stored OTP: {stored_otp}, User entered: {user_otp}")
+        if str(user_otp).strip() == str(stored_otp).strip():
+            return True, "OTP verified."
+        return False, "Incorrect OTP."
+    except Exception as e:
+        logger.error(f"Error verifying OTP: {str(e)}")
+        return False, "Error verifying OTP."
+
 
 def make_db():
+    """Fetch users and admins from API and store in MongoDB"""
     all_users = []
     all_admins = []
 
@@ -263,44 +306,59 @@ def make_db():
         else:
             return "No users or admins fetched."
     except Exception as e:
+        logger.error(f"Error rebuilding database: {str(e)}")
         return f"Error rebuilding database: {str(e)}"
 
-import re
-def get_drive_filename(url):
-    file_id = url.split("/d/")[1].split("/")[0]
-    direct_url = f"https://drive.google.com/uc?export=download&id={file_id}"
 
-    response = requests.get(direct_url, stream=True)
-    
-    cd = response.headers.get("Content-Disposition", "")
-    match = re.findall("filename=\"(.+)\"", cd)
-    if match:
-        return match[0]
-    else:
+import re
+
+
+def get_drive_filename(url):
+    """Extract filename from Google Drive URL"""
+    try:
+        file_id = url.split("/d/")[1].split("/")[0]
+        direct_url = f"https://drive.google.com/uc?export=download&id={file_id}"
+
+        response = requests.get(direct_url, stream=True)
+        
+        cd = response.headers.get("Content-Disposition", "")
+        match = re.findall("filename=\"(.+)\"", cd)
+        if match:
+            return match[0]
+        else:
+            return None
+    except Exception as e:
+        logger.error(f"Error extracting Drive filename: {str(e)}")
         return None
     
     
-def get_all_filenames(link : str):
+def get_all_filenames(link: str):
+    """Get filename without extension from Drive link"""
     filename = get_drive_filename(link)
-    print(filename)
+    logger.debug(f"Extracted filename: {filename}")
     return filename.split(".")[0] if filename is not None else None
 
 
 def login(email, password):
     """Login a user"""
-    user = users_collection.find_one({"email": email})
-    if user:
-        verify = creds_collection.find_one({"email": email})
-        if verify and verify.get("password"):
-            if check_password_hash(verify["password"], password):
-                role = "admin" if user.get("is_admin", False) else "user"
-                return True, f"Login Successful. Role: {role.title()}", role, user
+    try:
+        user = users_collection.find_one({"email": email})
+        if user:
+            verify = creds_collection.find_one({"email": email})
+            if verify and verify.get("password"):
+                if check_password_hash(verify["password"], password):
+                    role = "admin" if user.get("is_admin", False) else "user"
+                    return True, f"Login Successful. Role: {role.title()}", role, user
+                else:
+                    return False, "Invalid password.", None, None
             else:
-                return False, "Invalid password.", None, None
+                return False, "Please complete sign-in process first.", None, None
         else:
-            return False, "Please complete sign-in process first.", None, None
-    else:
-        return False, f"No user found with email: {email}", None, None
+            return False, f"No user found with email: {email}", None, None
+    except Exception as e:
+        logger.error(f"Login error: {str(e)}")
+        return False, "Login error occurred.", None, None
+
 
 # Authentication decorators
 def login_required(f):
@@ -311,6 +369,7 @@ def login_required(f):
             return redirect(url_for('auth.login_page'))
         return await f(*args, **kwargs)
     return check_login
+
 
 def admin_required(f):
     @wraps(f)
@@ -324,8 +383,9 @@ def admin_required(f):
         return await f(*args, **kwargs)
     return check_admin
 
+
 # Video processing function
-async def process_video(user_name: str, video_path: str, presentation_mode: str, http_session, output_dir: str, download_pdf_path : str) -> dict:
+async def process_video(user_name: str, video_path: str, presentation_mode: str, http_session, output_dir: str, download_pdf_path: str) -> dict:
     try:
         logger.debug(f"Processing video: {video_path}, user: {user_name}, mode: {presentation_mode}")
         video_name = os.path.basename(video_path).split('.')[0]
@@ -389,11 +449,10 @@ async def process_video(user_name: str, video_path: str, presentation_mode: str,
         await asyncio.to_thread(create_combined_pdf, logo_path, output_json_path, scores_json_path, quality_json_path, presentation_json_path, pdf_path, graph_path)
         logger.debug(f"Generated PDF at {pdf_path}")
 
-        # New code: Upload report to S3 after PDF generation
+        # Upload report to S3 after PDF generation
         user_email = session.get('email')
         if user_email:
             try:
-                # Upload the generated PDF report to S3 with user's email
                 upload_to_s3(pdf_path, user_email)
             except Exception as e:
                 logger.error(f"Failed to upload report to S3 for {user_email}: {str(e)}")
@@ -411,6 +470,7 @@ async def process_video(user_name: str, video_path: str, presentation_mode: str,
 @auth_bp.route('/')
 async def auth_index():
     return redirect(url_for('auth.login_page'))
+
 
 @auth_bp.route('/signin', methods=['GET', 'POST'])
 async def signin_page():
@@ -450,6 +510,7 @@ async def signin_page():
             logger.error(f"Error in sending OTP: {str(e)}")
 
     return await render_template('signin.html')
+
 
 @auth_bp.route('/signin/otp', methods=['GET', 'POST'])
 async def otp_page():
@@ -494,6 +555,7 @@ async def otp_page():
 
     return await render_template('otp.html', email=email)
 
+
 @auth_bp.route('/resend-otp')
 async def resend_otp():
     email = request.args.get('email', '').strip()
@@ -515,6 +577,7 @@ async def resend_otp():
         logger.error(f"Error in resending OTP: {str(e)}")
 
     return redirect(url_for('auth.otp_page', email=email))
+
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 async def login_page():
@@ -543,11 +606,13 @@ async def login_page():
 
     return await render_template('login.html')
 
+
 @auth_bp.route('/logout')
 async def logout():
     session.clear()
     await flash("You have been logged out successfully.", 'info')
     return redirect(url_for('auth.login_page'))
+
 
 # Main app routes (user functionality)
 @app.route("/", methods=["GET", "POST"])
@@ -562,6 +627,7 @@ async def index():
         presentation_mode = form.get("presentation_mode")
         logger.info(f"Received request: user={user_name}, youtube_url={youtube_url}, presentation_mode={presentation_mode}")
         pdf_name = None
+        
         if not user_name:
             await flash("Name is required before uploading a video.", "warning")
             return redirect(request.url)
@@ -585,7 +651,7 @@ async def index():
                 await video_file.save(video_path)
 
             async with aiohttp.ClientSession() as http_session:
-                video_data = await process_video(user_name, video_path, presentation_mode, http_session, uploads_dir , pdf_name if pdf_name is not None else None)
+                video_data = await process_video(user_name, video_path, presentation_mode, http_session, uploads_dir, pdf_name if pdf_name is not None else None)
                 # Save report metadata
                 reports_collection.insert_one({
                     "user_id": session['user_id'],
@@ -614,15 +680,18 @@ async def index():
         submissions=submissions
     )
 
+
 @app.route('/profile')
 @login_required
 async def user_profile():
     return await render_template('user_profile.html')
 
+
 @app.route('/settings')
 @login_required
 async def user_settings():
     return await render_template('user_settings.html')
+
 
 @app.route('/uploads/<filename>')
 @login_required
@@ -630,23 +699,25 @@ async def uploaded_file(filename):
     uploads = os.path.join(app.root_path, "static", "Uploads")
     return await send_from_directory(uploads, filename)
 
+
 @login_required
 @app.route("/download_pdf/<path:filename>")
 async def download_pdf(filename):
     reports_dir = os.path.join(app.root_path, "reports")
     pdf_path = os.path.join(reports_dir, filename)
 
-    # normalize & prevent directory traversal
+    # Normalize & prevent directory traversal
     pdf_path = os.path.normpath(pdf_path)
     if not pdf_path.startswith(reports_dir):
         abort(403)
 
-    safe_name = os.path.basename(filename)  # <-- only the file name
+    safe_name = os.path.basename(filename)
     return await send_file(
         pdf_path,
         as_attachment=True,
-        attachment_filename=f"evaluation_report_{safe_name}"  # Quart < 0.18
+        attachment_filename=f"evaluation_report_{safe_name}"
     )
+
 
 # Admin routes
 @admin_bp.route("/", methods=["GET", "POST"])
@@ -743,7 +814,7 @@ async def index():
                             video_path = os.path.join(uploads_dir, video_filename)
                             await video_file.save(video_path)
                             logger.debug(f"Saved file {original_filename} as {video_filename}, size: {os.path.getsize(video_path)} bytes")
-                            video_data = await process_video(user_name, video_path, presentation_mode, http_session, uploads_dir , None)
+                            video_data = await process_video(user_name, video_path, presentation_mode, http_session, uploads_dir, None)
                             reports_collection.insert_one({
                                 "user_id": session['user_id'],
                                 "user_name": user_name,
@@ -777,17 +848,6 @@ async def index():
         email=session.get('email')
     )
 
-# @admin_bp.route('/users')
-# @login_required
-# @admin_required
-# async def manage_users():
-#    return await render_template('manage_users.html')
-
-# @admin_bp.route('/settings')
-# @login_required
-# @admin_required
-# async def admin_settings():
-#    return await render_template('admin_settings.html')
 
 @admin_bp.route('/save_tuning', methods=['POST'])
 @login_required
@@ -812,23 +872,27 @@ async def save_tuning():
         logger.error(f"Error in save_tuning: {str(e)}")
         return {'status': 'error', 'message': str(e)}, 500
 
+
 @app.errorhandler(413)
 async def request_entity_too_large(error):
     await flash("File too large. Please upload files smaller than 800MB.", "danger")
     return redirect(url_for('index'))
 
+
 @app.before_serving
 async def startup():
     logger.info("Starting application and process pool")
+
 
 @app.after_serving
 async def shutdown():
     executor.shutdown()
     logger.info("Shutting down application and process pool")
 
+
 # Register blueprints
 app.register_blueprint(auth_bp)
 app.register_blueprint(admin_bp)
 
 # if __name__ == "__main__":
-#    app.run(host='0.0.0.0', port=8093)
+#     app.run(host='0.0.0.0', port=8093)
