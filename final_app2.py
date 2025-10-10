@@ -52,7 +52,7 @@ DOMAIN_NAME = os.getenv('DOMAIN_NAME')
 
 # MongoDB Atlas setup - First Database (speak_database)
 # Replace <username>, <password>, <cluster> with your actual credentials
-mongo_uri = "mongodb+srv://<username>:<password>@<cluster>.mongodb.net/?retryWrites=true&w=majority&appName=speak_database"
+mongo_uri = "mongodb+srv://aitool_db_user:odmBDzFB9DdNYu5H@cluster0.k7po371.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
 try:
     mongo_client = MongoClient(
