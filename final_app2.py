@@ -46,12 +46,12 @@ logger = logging.getLogger(__name__)
 # Initialize Quart app
 app = Quart(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024 * 1024
-app.secret_key = os.getenv("SECRET_KEY", "your-secret-key-here")
+app.secret_key = os.getenv("SECRET_KEY", "your-secret-key-here-change-this")
 
-# Production session configuration (with HTTPS)
-# For local development, set SESSION_COOKIE_SECURE=False
+# Production vs Development detection
 IS_PRODUCTION = os.getenv("ENVIRONMENT", "development") == "production"
 
+# Session configuration
 if IS_PRODUCTION:
     app.config.update(
         SESSION_COOKIE_SECURE=True,
@@ -61,7 +61,7 @@ if IS_PRODUCTION:
         PERMANENT_SESSION_LIFETIME=timedelta(hours=24)
     )
 else:
-    # Development configuration
+    # Development configuration (localhost)
     app.config.update(
         SESSION_COOKIE_SECURE=False,
         SESSION_COOKIE_HTTPONLY=True,
@@ -83,7 +83,6 @@ try:
         maxPoolSize=50,
         minPoolSize=10
     )
-    # Test connection
     mongo_client.server_info()
     logger.info("MongoDB Atlas connection successful (speak_database)")
 except Exception as e:
@@ -106,7 +105,6 @@ try:
         maxPoolSize=50,
         minPoolSize=10
     )
-    # Test connection
     mongo_client1.server_info()
     logger.info("MongoDB Atlas connection successful (somereports)")
 except Exception as e:
@@ -157,7 +155,6 @@ def upload_to_s3(file_path, email):
         arn = f"arn:aws:s3:::{bucket_name}/{s3_key}"
         object_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{s3_key}"
         
-        # Store info with email in MongoDB
         doc = {
             'email': email,
             'file_name': original_filename,
@@ -189,15 +186,12 @@ def download_and_delete_by_email(email, download_path):
             
         s3_key = f"{s3_folder}{doc['file_name']}"
         
-        # Download from S3
         s3.download_file(bucket_name, s3_key, download_path)
         logger.info(f"Downloaded file to {download_path}")
         
-        # Delete from S3
         s3.delete_object(Bucket=bucket_name, Key=s3_key)
         logger.info(f"Deleted file from S3: {s3_key}")
         
-        # Delete from MongoDB
         collection1.delete_one({'email': email})
         logger.info(f"Removed MongoDB record for {email}")
         return True
@@ -377,13 +371,15 @@ def login(email, password):
         logger.error(f"Login error: {str(e)}")
         return False, "Login error occurred.", None, None
 
-# Authentication decorators
+# Authentication decorators - FIXED: flash() is NOT async
 def login_required(f):
     @wraps(f)
     async def check_login(*args, **kwargs):
         if 'user_id' not in session:
-            await flash("Please log in to access this page.", 'warning')
+            flash("Please log in to access this page.", 'warning')
+            logger.warning(f"Unauthorized access attempt to {request.path}")
             return redirect(url_for('auth.login_page'))
+        logger.debug(f"Authorized access: user_id={session.get('user_id')}")
         return await f(*args, **kwargs)
     return check_login
 
@@ -391,11 +387,14 @@ def admin_required(f):
     @wraps(f)
     async def check_admin(*args, **kwargs):
         if 'user_id' not in session:
-            await flash("Please log in to access this page.", 'warning')
+            flash("Please log in to access this page.", 'warning')
+            logger.warning(f"Unauthorized access attempt to {request.path}")
             return redirect(url_for('auth.login_page'))
         if session.get('role') != 'admin':
-            await flash("Admin access required.", 'error')
+            flash("Admin access required.", 'error')
+            logger.warning(f"Non-admin access attempt to {request.path} by user {session.get('email')}")
             return redirect(url_for('index'))
+        logger.debug(f"Admin access authorized: {session.get('email')}")
         return await f(*args, **kwargs)
     return check_admin
 
@@ -492,34 +491,34 @@ async def signin_page():
         email = form.get('email', '').strip()
 
         if not email:
-            await flash('Please enter a valid email address.', 'error')
+            flash('Please enter a valid email address.', 'error')
             return await render_template('signin.html')
 
         user = users_collection.find_one({"email": email})
         if not user:
-            await flash('User not found. Reloading database...', 'warning')
+            flash('User not found. Reloading database...', 'warning')
             db_result = make_db()
             logger.info(f"Database reload result: {db_result}")
 
             user = users_collection.find_one({"email": email})
             if not user:
-                await flash(f"Database reloaded but user still not found with email: {email}", 'error')
+                flash(f"Database reloaded but user still not found with email: {email}", 'error')
                 return await render_template('signin.html')
             else:
-                await flash("Database reloaded successfully.", 'success')
+                flash("Database reloaded successfully.", 'success')
 
         try:
             from mail import send_otp
             otp = send_otp(email)
             if otp:
                 store_pending_otp(email, otp)
-                await flash("OTP sent to your email address.", 'info')
+                flash("OTP sent to your email address.", 'info')
                 logger.info(f"OTP sent to {email}")
                 return redirect(url_for('auth.otp_page', email=email))
             else:
-                await flash("Failed to send OTP. Please try again.", 'error')
+                flash("Failed to send OTP. Please try again.", 'error')
         except Exception as e:
-            await flash(f"Error sending OTP: {str(e)}", 'error')
+            flash(f"Error sending OTP: {str(e)}", 'error')
             logger.error(f"Error in sending OTP: {str(e)}")
 
     return await render_template('signin.html')
@@ -529,7 +528,7 @@ async def otp_page():
     email = request.args.get('email') or (await request.form).get('email')
 
     if not email:
-        await flash("Invalid access. Please start sign-in process again.", 'error')
+        flash("Invalid access. Please start sign-in process again.", 'error')
         return redirect(url_for('auth.signin_page'))
 
     if request.method == 'POST':
@@ -539,20 +538,20 @@ async def otp_page():
         confirm_password = form.get('confirm_password', '').strip()
 
         if not user_otp or not password or not confirm_password:
-            await flash("All fields are required.", 'error')
+            flash("All fields are required.", 'error')
             return await render_template('otp.html', email=email)
 
         if password != confirm_password:
-            await flash("Passwords do not match.", 'error')
+            flash("Passwords do not match.", 'error')
             return await render_template('otp.html', email=email)
 
         if len(password) < 6:
-            await flash("Password must be at least 6 characters long.", 'error')
+            flash("Password must be at least 6 characters long.", 'error')
             return await render_template('otp.html', email=email)
 
         ok, msg = verify_otp(email, user_otp)
         if not ok:
-            await flash(msg, 'error')
+            flash(msg, 'error')
             return await render_template('otp.html', email=email)
 
         hashed_password = generate_password_hash(password)
@@ -562,7 +561,7 @@ async def otp_page():
              "$unset": {"otp": "", "otp_expire": ""}}
         )
 
-        await flash("Sign-in completed successfully. You can now log in.", 'success')
+        flash("Sign-in completed successfully. You can now log in.", 'success')
         return redirect(url_for('auth.login_page'))
 
     return await render_template('otp.html', email=email)
@@ -571,7 +570,7 @@ async def otp_page():
 async def resend_otp():
     email = request.args.get('email', '').strip()
     if not email:
-        await flash("Invalid request.", 'error')
+        flash("Invalid request.", 'error')
         return redirect(url_for('auth.signin_page'))
 
     try:
@@ -579,12 +578,12 @@ async def resend_otp():
         otp = send_otp(email)
         if otp:
             store_pending_otp(email, otp)
-            await flash("New OTP sent to your email address.", 'success')
+            flash("New OTP sent to your email address.", 'success')
             logger.info(f"New OTP sent to {email}")
         else:
-            await flash("Failed to send OTP. Please try again.", 'error')
+            flash("Failed to send OTP. Please try again.", 'error')
     except Exception as e:
-        await flash(f"Error sending OTP: {str(e)}", 'error')
+        flash(f"Error sending OTP: {str(e)}", 'error')
         logger.error(f"Error in resending OTP: {str(e)}")
 
     return redirect(url_for('auth.otp_page', email=email))
@@ -597,12 +596,12 @@ async def login_page():
         password = form.get('password', '').strip()
 
         if not email or not password:
-            await flash("Please enter both email and password.", 'error')
+            flash("Please enter both email and password.", 'error')
             return await render_template('login.html')
 
         success, message, role, user = login(email, password)
         if success:
-            # Make session permanent
+            # Set session as permanent BEFORE adding data
             session.permanent = True
             
             session['user_id'] = str(user['_id'])
@@ -610,15 +609,21 @@ async def login_page():
             session['role'] = role
             session['name'] = user.get('name', 'User')
             
-            await flash(message, 'success')
-            logger.info(f"User logged in: {email}, role: {role}")
+            # Log session data for debugging
+            logger.info(f"User logged in: {email}, role: {role}, session_id: {session.get('user_id')}")
+            logger.debug(f"Session data: {dict(session)}")
+            
+            flash(message, 'success')
             
             if role == 'admin':
+                logger.info(f"Redirecting to admin portal")
                 return redirect(url_for('admin.index'))
             else:
+                logger.info(f"Redirecting to user portal")
                 return redirect(url_for('index'))
         else:
-            await flash(message, 'error')
+            flash(message, 'error')
+            logger.warning(f"Failed login attempt for {email}")
 
     return await render_template('login.html')
 
@@ -626,7 +631,7 @@ async def login_page():
 async def logout():
     user_email = session.get('email', 'Unknown')
     session.clear()
-    await flash("You have been logged out successfully.", 'info')
+    flash("You have been logged out successfully.", 'info')
     logger.info(f"User logged out: {user_email}")
     return redirect(url_for('auth.login_page'))
 
@@ -645,7 +650,7 @@ async def index():
         pdf_name = None
         
         if not user_name:
-            await flash("Name is required before uploading a video.", "warning")
+            flash("Name is required before uploading a video.", "warning")
             return redirect(request.url)
 
         try:
@@ -658,11 +663,11 @@ async def index():
                 await download_drive_url(youtube_url, video_path)
 
                 if not os.path.exists(video_path):
-                    await flash("Failed to download video from URL.", "warning")
+                    flash("Failed to download video from URL.", "warning")
                     return redirect(request.url)
             else:
                 if not video_file:
-                    await flash("Video file is missing!", "warning")
+                    flash("Video file is missing!", "warning")
                     return redirect(request.url)
                 await video_file.save(video_path)
 
@@ -675,7 +680,7 @@ async def index():
                     "pdf_filename": video_data["pdf_filename"],
                     "created_at": datetime.utcnow()
                 })
-                await flash("Video analysis and PDF report generation completed successfully!", "success")
+                flash("Video analysis and PDF report generation completed successfully!", "success")
                 return await render_template(
                     "result.html",
                     user_name=user_name,
@@ -684,7 +689,7 @@ async def index():
                 )
         except Exception as e:
             logger.error(f"Error in request: {e}", exc_info=True)
-            await flash(f"An error occurred: {str(e)}", "danger")
+            flash(f"An error occurred: {str(e)}", "danger")
             return redirect(request.url)
 
     submissions = list(reports_collection.find({"user_id": session['user_id']}))
@@ -789,11 +794,11 @@ async def index():
             logger.info(f"Admin bulk processing: user={user_name}, urls={len([u for u in video_urls if u.strip()])}, files={len([f for f in video_files if f.filename])}")
 
             if not user_name:
-                await flash("Please provide a valid name.", "danger")
+                flash("Please provide a valid name.", "danger")
                 return redirect(request.url)
 
             if not any(url.strip() for url in video_urls) and not any(f.filename for f in video_files):
-                await flash("Please provide at least one video URL or file.", "danger")
+                flash("Please provide at least one video URL or file.", "danger")
                 return redirect(request.url)
 
             uploads_dir = os.path.join(app.root_path, "static", "Uploads")
@@ -808,7 +813,7 @@ async def index():
                             pdf_name = get_all_filenames(url)
                             await download_drive_url(url, video_path)
                             if not os.path.exists(video_path):
-                                await flash(f"Failed to download video from URL: {url}", "warning")
+                                flash(f"Failed to download video from URL: {url}", "warning")
                                 continue
                             video_data = await process_video(user_name, video_path, presentation_mode, http_session, uploads_dir, pdf_name)
                             reports_collection.insert_one({
@@ -820,7 +825,7 @@ async def index():
                             videos.append(video_data)
                         except Exception as e:
                             logger.error(f"Error processing URL {url}: {str(e)}", exc_info=True)
-                            await flash(f"Error processing URL {url}: {str(e)}", "warning")
+                            flash(f"Error processing URL {url}: {str(e)}", "warning")
 
                 for video_file in video_files:
                     if video_file and video_file.filename:
@@ -840,13 +845,13 @@ async def index():
                             videos.append(video_data)
                         except Exception as e:
                             logger.error(f"Error processing file {original_filename}: {str(e)}", exc_info=True)
-                            await flash(f"Error processing file {original_filename}: {str(e)}", "warning")
+                            flash(f"Error processing file {original_filename}: {str(e)}", "warning")
 
             if not videos:
-                await flash("No valid videos were processed.", "danger")
+                flash("No valid videos were processed.", "danger")
                 return redirect(request.url)
 
-            await flash(f"Successfully processed {len(videos)} video(s)!", "success")
+            flash(f"Successfully processed {len(videos)} video(s)!", "success")
             return await render_template(
                 "multi-result2.html",
                 user_name=user_name,
@@ -854,7 +859,7 @@ async def index():
             )
         except Exception as e:
             logger.error(f"Error in admin index route: {str(e)}", exc_info=True)
-            await flash(f"Server error: {str(e)}", "danger")
+            flash(f"Server error: {str(e)}", "danger")
             return redirect(request.url)
 
     return await render_template(
@@ -890,13 +895,13 @@ async def save_tuning():
 
 @app.errorhandler(413)
 async def request_entity_too_large(error):
-    await flash("File too large. Please upload files smaller than 2GB.", "danger")
+    flash("File too large. Please upload files smaller than 2GB.", "danger")
     return redirect(url_for('index'))
 
 @app.errorhandler(500)
 async def internal_server_error(error):
     logger.error(f"Internal server error: {str(error)}", exc_info=True)
-    await flash("An internal server error occurred. Please try again later.", "danger")
+    flash("An internal server error occurred. Please try again later.", "danger")
     return redirect(url_for('index'))
 
 @app.before_serving
@@ -923,7 +928,6 @@ if __name__ == "__main__":
     import hypercorn.asyncio
     import hypercorn.config
     
-    # Get port from environment or default to 8093
     port = int(os.getenv("PORT", 8093))
     
     config = hypercorn.config.Config()
@@ -937,7 +941,8 @@ if __name__ == "__main__":
     print("=" * 60)
     print(f"📍 Environment: {os.getenv('ENVIRONMENT', 'development')}")
     print(f"📍 Server URL: http://0.0.0.0:{port}")
-    print(f"📍 Auth URL: http://localhost:{port}/auth/login")
+    print(f"📍 Login URL: http://localhost:{port}/auth/login")
+    print(f"📍 Sign In URL: http://localhost:{port}/auth/signin")
     print(f"📍 Admin URL: http://localhost:{port}/admin")
     print("=" * 60)
     print("✅ MongoDB Atlas: Connected")
